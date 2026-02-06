@@ -7,7 +7,7 @@ import tkinter as tk
 from tkinter import filedialog, messagebox, ttk
 
 DATA_FILE = Path("budget_data.json")
-DEFAULT_CATEGORIES = [
+EXPENSE_CATEGORIES = [
     "Groceries",
     "Rent",
     "Utilities",
@@ -15,11 +15,38 @@ DEFAULT_CATEGORIES = [
     "Dining",
     "Entertainment",
     "Healthcare",
-    "Savings",
+    "Insurance",
+    "Debt Payment",
+    "Childcare",
+    "Education",
+    "Phone/Internet",
+    "Shopping",
+    "Personal Care",
+    "Travel",
+    "Gifts",
+    "Taxes",
+    "Other",
+]
+INCOME_CATEGORIES = [
     "Salary",
     "Freelance",
+    "Business",
+    "Interest",
+    "Dividends",
+    "Rental Income",
+    "Refund",
+    "Gift Received",
+    "Other Income",
 ]
+DEFAULT_CATEGORIES = sorted(set(EXPENSE_CATEGORIES + INCOME_CATEGORIES))
 
+
+def typical_categories_for(entry_type: str) -> list[str]:
+    if entry_type == "income":
+        return INCOME_CATEGORIES[:]
+    if entry_type == "expense":
+        return EXPENSE_CATEGORIES[:]
+    return DEFAULT_CATEGORIES[:]
 
 class Colors:
     BG = "#f4f6fb"
@@ -284,6 +311,7 @@ class BudgetAppGUI:
         columns = ("id", "date", "type", "category", "amount", "note")
         self.tree = ttk.Treeview(table_wrap, columns=columns, show="headings")
         self.tree.grid(row=1, column=0, sticky="nsew")
+        self.tree.bind("<Delete>", lambda _e: self.delete_selected())
 
         headings = {
             "id": "ID",
@@ -332,6 +360,10 @@ class BudgetAppGUI:
         self.search_var.trace_add("write", self._schedule_filter_refresh)
         self.filter_type_var.trace_add("write", self._schedule_filter_refresh)
         self.filter_category_var.trace_add("write", self._schedule_filter_refresh)
+        self.type_var.trace_add("write", self._on_entry_type_changed)
+
+    def _on_entry_type_changed(self, *_args) -> None:
+        self._refresh_category_options()
 
     def _schedule_filter_refresh(self, *_args) -> None:
         if self._filter_after_id is not None:
@@ -440,7 +472,9 @@ class BudgetAppGUI:
     def _refresh_category_options(self) -> None:
         categories = sorted({tx.get("category", "").strip() for tx in self.data.get("transactions", []) if tx.get("category")})
 
-        category_choices = sorted(set(DEFAULT_CATEGORIES + categories))
+        selected_type = self.type_var.get().strip().lower()
+        typed_categories = sorted({tx.get("category", "").strip() for tx in self.data.get("transactions", []) if tx.get("type") == selected_type and tx.get("category")})
+        category_choices = sorted(set(typical_categories_for(selected_type) + typed_categories + categories))
         self.category_entry["values"] = category_choices
 
         filter_values = ["all", *categories]
@@ -494,14 +528,27 @@ class BudgetAppGUI:
             messagebox.showwarning("No Selection", "Select an entry first, then click Delete.")
             return
 
-        tx_id = int(self.tree.item(selected[0], "values")[0])
-        if not messagebox.askyesno("Confirm Delete", "Delete this entry? This cannot be undone."):
+        ids_to_delete = set()
+        for row_id in selected:
+            row_values = self.tree.item(row_id, "values")
+            if row_values:
+                ids_to_delete.add(int(row_values[0]))
+
+        if not ids_to_delete:
+            messagebox.showwarning("No Selection", "Select a valid entry to delete.")
             return
 
-        self.data["transactions"] = [tx for tx in self.data["transactions"] if tx["id"] != tx_id]
+        entry_word = "entry" if len(ids_to_delete) == 1 else "entries"
+        if not messagebox.askyesno(
+            "Confirm Delete",
+            f"Delete {len(ids_to_delete)} {entry_word}? This cannot be undone.",
+        ):
+            return
+
+        self.data["transactions"] = [tx for tx in self.data["transactions"] if tx["id"] not in ids_to_delete]
         self._reindex_transactions()
         save_data(self.data)
-        self.refresh_ui("Entry deleted.")
+        self.refresh_ui(f"Deleted {len(ids_to_delete)} {entry_word}.")
 
     def _reindex_transactions(self) -> None:
         for index, tx in enumerate(self.data["transactions"], start=1):
