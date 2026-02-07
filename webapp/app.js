@@ -65,7 +65,10 @@ const el = {
   balanceTotal: document.getElementById("balanceTotal"),
   budgetGoal: document.getElementById("budgetGoal"),
   budgetLeft: document.getElementById("budgetLeft"),
+  budgetProgressLabel: document.getElementById("budgetProgressLabel"),
+  budgetProgressFill: document.getElementById("budgetProgressFill"),
   status: document.getElementById("status"),
+  entryCount: document.getElementById("entryCount"),
   helpBtn: document.getElementById("helpBtn"),
   helpDialog: document.getElementById("helpDialog"),
   editDialog: document.getElementById("editDialog"),
@@ -256,6 +259,10 @@ function createCloudStubAdapter() {
 
 function formatMoney(n) {
   return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(n || 0);
+}
+
+function formatPercent(value) {
+  return `${Math.max(0, value).toFixed(1)}%`;
 }
 
 function categoriesFor(type) {
@@ -537,6 +544,36 @@ function renderSummary() {
 
   el.balanceTotal.style.color = balance < 0 ? "var(--bad)" : "var(--good)";
   el.budgetLeft.style.color = left < 0 ? "var(--bad)" : "var(--good)";
+  renderBudgetProgress(expense, left);
+}
+
+function renderBudgetProgress(expense, left) {
+  if (!el.budgetProgressFill || !el.budgetProgressLabel) return;
+
+  if (state.budget <= 0) {
+    el.budgetProgressFill.style.width = "0%";
+    el.budgetProgressFill.style.background = "linear-gradient(90deg, var(--accent), var(--accent-alt))";
+    el.budgetProgressLabel.textContent = "Set a budget goal to track your monthly pace.";
+    return;
+  }
+
+  const percentUsed = (expense / state.budget) * 100;
+  const boundedPercent = Math.max(0, Math.min(percentUsed, 100));
+  el.budgetProgressFill.style.width = `${boundedPercent.toFixed(1)}%`;
+
+  if (percentUsed > 100) {
+    el.budgetProgressFill.style.background = "linear-gradient(90deg, #cf5f4a, #be3d31)";
+    el.budgetProgressLabel.textContent = `${formatPercent(percentUsed)} used. You are ${formatMoney(Math.abs(left))} over budget.`;
+    return;
+  }
+
+  if (percentUsed >= 85) {
+    el.budgetProgressFill.style.background = "linear-gradient(90deg, #d89c2c, #d66a31)";
+  } else {
+    el.budgetProgressFill.style.background = "linear-gradient(90deg, var(--accent), var(--accent-alt))";
+  }
+
+  el.budgetProgressLabel.textContent = `${formatPercent(percentUsed)} used. ${formatMoney(Math.max(left, 0))} left this month.`;
 }
 
 function renderTable() {
@@ -547,9 +584,9 @@ function renderTable() {
   rows.forEach((entry) => {
     const tr = document.createElement("tr");
     appendCell(tr, formatDateTime(entry.createdAt));
-    appendCell(tr, entry.type);
+    appendTypeCell(tr, entry.type);
     appendCell(tr, entry.category);
-    appendCell(tr, formatMoney(entry.amount));
+    appendMoneyCell(tr, entry.amount, entry.type);
     appendCell(tr, entry.note || "");
 
     const actionCell = document.createElement("td");
@@ -573,6 +610,9 @@ function renderTable() {
   el.rows.appendChild(fragment);
 
   el.emptyState.style.display = rows.length ? "none" : "block";
+  if (el.entryCount) {
+    el.entryCount.textContent = `${rows.length} shown`;
+  }
 }
 
 function deleteEntry(id) {
@@ -765,6 +805,10 @@ function drawMonthChart() {
   const { width, height } = fitCanvas(canvas);
   ctx.clearRect(0, 0, width, height);
 
+  const axisColor = getCssVar("--line-strong", "#ccd7e6");
+  const barColor = getCssVar("--accent", "#0f6bff");
+  const labelColor = getCssVar("--muted", "#5e6a79");
+
   const map = new Map();
   state.entries.filter((e) => e.type === "expense").forEach((e) => {
     const month = e.createdAt.slice(0, 7);
@@ -784,7 +828,7 @@ function drawMonthChart() {
   const right = width - 16;
   const bottom = height - 30;
 
-  ctx.strokeStyle = "#ccd7e6";
+  ctx.strokeStyle = axisColor;
   ctx.beginPath();
   ctx.moveTo(left, top);
   ctx.lineTo(left, bottom);
@@ -798,10 +842,10 @@ function drawMonthChart() {
     const w = space * 0.6;
     const y = bottom - h;
 
-    ctx.fillStyle = "#0f6bff";
+    ctx.fillStyle = barColor;
     ctx.fillRect(x, y, w, h);
-    ctx.fillStyle = "#5e6a79";
-    ctx.font = "11px Segoe UI";
+    ctx.fillStyle = labelColor;
+    ctx.font = "11px 'IBM Plex Mono', monospace";
     ctx.fillText(months[i].slice(2), x, bottom + 14);
   });
 }
@@ -811,6 +855,11 @@ function drawCategoryChart() {
   const ctx = canvas.getContext("2d");
   const { width, height } = fitCanvas(canvas);
   ctx.clearRect(0, 0, width, height);
+
+  const textColor = getCssVar("--ink", "#17202a");
+  const mutedColor = getCssVar("--muted", "#5e6a79");
+  const trackColor = getCssVar("--accent-soft", "#e4efff");
+  const barColor = getCssVar("--accent-alt", "#198754");
 
   const totals = new Map();
   state.entries.filter((e) => e.type === "expense").forEach((e) => {
@@ -831,25 +880,27 @@ function drawCategoryChart() {
     const full = width - x - 16;
     const barWidth = (value / max) * full;
 
-    ctx.fillStyle = "#17202a";
-    ctx.font = "12px Segoe UI";
+    ctx.fillStyle = textColor;
+    ctx.font = "12px 'Plus Jakarta Sans', sans-serif";
     ctx.fillText(label, 12, y + 11);
 
-    ctx.fillStyle = "#e4efff";
+    ctx.fillStyle = trackColor;
     ctx.fillRect(x, y, full, 14);
-    ctx.fillStyle = "#198754";
+    ctx.fillStyle = barColor;
     ctx.fillRect(x, y, barWidth, 14);
 
-    ctx.fillStyle = "#5e6a79";
-    ctx.fillText(formatMoney(value), x + full - 60, y + 11);
+    ctx.fillStyle = mutedColor;
+    ctx.textAlign = "right";
+    ctx.fillText(formatMoney(value), x + full - 6, y + 11);
+    ctx.textAlign = "left";
     y += 34;
   });
 }
 
 function fitCanvas(canvas) {
   const ratio = Math.max(window.devicePixelRatio || 1, 1);
-  const w = canvas.clientWidth;
-  const h = canvas.clientHeight;
+  const w = Math.max(canvas.clientWidth, 280);
+  const h = Math.max(canvas.clientHeight, 220);
   canvas.width = Math.floor(w * ratio);
   canvas.height = Math.floor(h * ratio);
   const ctx = canvas.getContext("2d");
@@ -858,21 +909,87 @@ function fitCanvas(canvas) {
 }
 
 function drawCenterText(ctx, canvas, text) {
-  ctx.fillStyle = "#5e6a79";
-  ctx.font = "14px Segoe UI";
+  ctx.fillStyle = getCssVar("--muted", "#5e6a79");
+  ctx.font = "14px 'Plus Jakarta Sans', sans-serif";
   ctx.textAlign = "center";
   ctx.fillText(text, canvas.clientWidth / 2, canvas.clientHeight / 2);
   ctx.textAlign = "left";
 }
 
-function setStatus(message) {
+function setStatus(message, tone = "") {
+  if (!el.status) return;
   el.status.textContent = message;
+  el.status.classList.remove("is-ok", "is-error", "is-info");
+
+  const resolvedTone = tone || inferStatusTone(message);
+  if (resolvedTone === "ok") {
+    el.status.classList.add("is-ok");
+  } else if (resolvedTone === "error") {
+    el.status.classList.add("is-error");
+  } else if (resolvedTone === "info") {
+    el.status.classList.add("is-info");
+  }
+}
+
+function inferStatusTone(message) {
+  const text = String(message || "").toLowerCase();
+  if (!text) return "";
+
+  if (
+    text.includes("failed") ||
+    text.includes("could not") ||
+    text.includes("unavailable") ||
+    text.includes("enter a valid") ||
+    text.includes("pick a category")
+  ) {
+    return "error";
+  }
+
+  if (text.includes("cloud sync")) {
+    return "info";
+  }
+
+  if (
+    text.includes("saved") ||
+    text.includes("added") ||
+    text.includes("updated") ||
+    text.includes("deleted") ||
+    text.includes("exported") ||
+    text.includes("imported") ||
+    text.includes("loaded") ||
+    text.includes("removed")
+  ) {
+    return "ok";
+  }
+
+  return "";
 }
 
 function appendCell(row, value) {
   const td = document.createElement("td");
   td.textContent = value;
   row.appendChild(td);
+}
+
+function appendTypeCell(row, type) {
+  const td = document.createElement("td");
+  const chip = document.createElement("span");
+  chip.className = `type-chip ${type === "income" ? "income" : "expense"}`;
+  chip.textContent = type;
+  td.appendChild(chip);
+  row.appendChild(td);
+}
+
+function appendMoneyCell(row, amount, type) {
+  const td = document.createElement("td");
+  td.className = `money-value ${type === "income" ? "income" : "expense"}`;
+  td.textContent = formatMoney(amount);
+  row.appendChild(td);
+}
+
+function getCssVar(name, fallback) {
+  const value = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+  return value || fallback;
 }
 
 function isSampleEntry(entry) {

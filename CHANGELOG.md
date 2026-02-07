@@ -1,12 +1,18 @@
-﻿# Changelog
+# Changelog
 
 All notable changes to BudgetBeacon are documented here.
 
 ## [Unreleased]
 ### Added
-- Cloud sync exploration document with architecture options and rollout plan (`docs/cloud-sync-exploration.md`)
-- Feature-flagged web persistence adapter with default local mode and `cloud-stub` mode (`webapp/app.js`)
-- Web `Sync Now (Cloud)` action wired to the persistence adapter (`webapp/index.html`, `webapp/app.js`)
+- Web budget usage progress component with dynamic messaging and warning states (`webapp/index.html`, `webapp/app.js`)
+- Entry count metadata and richer entry row rendering (type chips + styled money cells) (`webapp/index.html`, `webapp/app.js`, `webapp/styles.css`)
+- Tone-aware status presentation (`ok`, `error`, `info`) with inferred message classification (`webapp/app.js`, `webapp/styles.css`)
+- Modernized web styling system with updated typography, color tokens, and responsive polish (`webapp/styles.css`)
+
+### Changed
+- Web dashboard layout refreshed with improved information hierarchy and visual clarity (`webapp/index.html`, `webapp/styles.css`)
+- Chart drawing now consumes CSS variables for theme consistency (`webapp/app.js`)
+- Documentation refreshed to match modernized web behavior and QA needs (`README.md`, `webapp/QA_CHECKLIST.md`, `docs/screenshots/README.md`, `docs/cloud-sync-exploration.md`)
 
 ### Planned
 - Optional deployment guides for Vercel and Netlify (GitHub Pages is already live)

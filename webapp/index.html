@@ -4,90 +4,134 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>BudgetBeacon Web</title>
-  <link rel="stylesheet" href="styles.css?v=3" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" href="styles.css?v=4" />
 </head>
 <body>
-  <div class="bg-orb orb-a"></div>
-  <div class="bg-orb orb-b"></div>
-  <div class="bg-grid"></div>
+  <div class="scene-glow glow-a"></div>
+  <div class="scene-glow glow-b"></div>
+  <div class="scene-grid"></div>
   <main class="app">
     <header class="topbar">
-      <div>
-        <h1>BudgetBeacon Web</h1>
-        <p class="sub">A clean money dashboard for phone and desktop</p>
-        <p class="brand-tag">BudgetBeacon Theme</p>
+      <div class="brand-copy">
+        <p class="eyebrow">Personal Finance Hub</p>
+        <h1>BudgetBeacon</h1>
+        <p class="sub">Track every dollar, spot spending patterns, and stay ahead of your monthly budget.</p>
       </div>
-      <button id="helpBtn" class="btn ghost">How To Use</button>
+      <div class="topbar-actions">
+        <p class="brand-tag">Local-first web app</p>
+        <button id="helpBtn" class="btn ghost">How To Use</button>
+      </div>
     </header>
 
     <section class="stats" id="stats">
-      <article class="card"><h2>Income</h2><p id="incomeTotal">$0.00</p></article>
-      <article class="card"><h2>Expenses</h2><p id="expenseTotal">$0.00</p></article>
-      <article class="card"><h2>Balance</h2><p id="balanceTotal">$0.00</p></article>
-      <article class="card"><h2>Budget Goal</h2><p id="budgetGoal">$0.00</p></article>
-      <article class="card"><h2>Budget Left</h2><p id="budgetLeft">$0.00</p></article>
+      <article class="card metric-card">
+        <h2>Income</h2>
+        <p id="incomeTotal" class="metric-value">$0.00</p>
+      </article>
+      <article class="card metric-card">
+        <h2>Expenses</h2>
+        <p id="expenseTotal" class="metric-value">$0.00</p>
+      </article>
+      <article class="card metric-card">
+        <h2>Balance</h2>
+        <p id="balanceTotal" class="metric-value">$0.00</p>
+      </article>
+      <article class="card metric-card">
+        <h2>Budget Goal</h2>
+        <p id="budgetGoal" class="metric-value">$0.00</p>
+      </article>
+      <article class="card metric-card">
+        <h2>Budget Left</h2>
+        <p id="budgetLeft" class="metric-value">$0.00</p>
+      </article>
+    </section>
+
+    <section class="panel budget-progress">
+      <div class="budget-progress-head">
+        <h3>Budget Usage</h3>
+        <p id="budgetProgressLabel">Set a budget goal to track your monthly pace.</p>
+      </div>
+      <div class="progress-track" aria-hidden="true">
+        <div id="budgetProgressFill" class="progress-fill"></div>
+      </div>
     </section>
 
     <section class="layout">
       <aside class="panel form-panel">
-        <h3>Add Entry</h3>
-        <label>Money Type
-          <select id="typeInput">
-            <option value="expense">Expense</option>
-            <option value="income">Income</option>
-          </select>
-        </label>
+        <section class="form-section">
+          <h3>Add Entry</h3>
+          <label>Money Type
+            <select id="typeInput">
+              <option value="expense">Expense</option>
+              <option value="income">Income</option>
+            </select>
+          </label>
 
-        <label>Category
-          <select id="categoryInput"></select>
-        </label>
+          <label>Category
+            <select id="categoryInput"></select>
+          </label>
 
-        <label>Amount
-          <input id="amountInput" type="number" inputmode="decimal" min="0" step="0.01" placeholder="24.99" />
-        </label>
+          <label>Amount
+            <input id="amountInput" type="number" inputmode="decimal" min="0" step="0.01" placeholder="24.99" />
+          </label>
 
-        <label>Note (optional)
-          <input id="noteInput" type="text" placeholder="Example: weekly groceries" />
-        </label>
+          <label>Note (optional)
+            <input id="noteInput" type="text" placeholder="Example: weekly groceries" />
+          </label>
 
-        <label class="checkline">
-          <input id="recurringToggleInput" type="checkbox" />
-          Repeat this entry automatically
-        </label>
-        <label>Frequency
-          <select id="recurringFrequencyInput">
-            <option value="weekly">Weekly</option>
-            <option value="monthly">Monthly</option>
-          </select>
-        </label>
-        <label>Start Date
-          <input id="recurringStartInput" type="date" />
-        </label>
+          <label class="checkline">
+            <input id="recurringToggleInput" type="checkbox" />
+            Repeat this entry automatically
+          </label>
 
-        <div class="row">
-          <button id="saveBtn" class="btn primary">Save Entry</button>
-          <button id="clearBtn" class="btn">Clear</button>
-        </div>
+          <label>Frequency
+            <select id="recurringFrequencyInput">
+              <option value="weekly">Weekly</option>
+              <option value="monthly">Monthly</option>
+            </select>
+          </label>
 
-        <h3>Monthly Budget</h3>
-        <label>Budget Goal
-          <input id="budgetInput" type="number" inputmode="decimal" min="0" step="0.01" placeholder="2000" />
-        </label>
-        <button id="saveBudgetBtn" class="btn">Save Budget Goal</button>
-        <div class="row">
-          <button id="exportDataBtn" class="btn">Export Backup</button>
-          <button id="importDataBtn" class="btn">Import Backup</button>
-        </div>
-        <button id="syncNowBtn" class="btn">Sync Now (Cloud)</button>
-        <button id="sampleDataBtn" class="btn">Load Sample Data</button>
-        <input id="importFileInput" type="file" accept=".json,application/json" hidden />
+          <label>Start Date
+            <input id="recurringStartInput" type="date" />
+          </label>
 
-        <h3>Recurring Rules</h3>
-        <ul id="recurringList" class="recurring-list"></ul>
+          <div class="row">
+            <button id="saveBtn" class="btn primary">Save Entry</button>
+            <button id="clearBtn" class="btn">Clear</button>
+          </div>
+        </section>
+
+        <section class="form-section">
+          <h3>Monthly Budget</h3>
+          <label>Budget Goal
+            <input id="budgetInput" type="number" inputmode="decimal" min="0" step="0.01" placeholder="2000" />
+          </label>
+          <button id="saveBudgetBtn" class="btn">Save Budget Goal</button>
+
+          <div class="row">
+            <button id="exportDataBtn" class="btn">Export Backup</button>
+            <button id="importDataBtn" class="btn">Import Backup</button>
+          </div>
+
+          <button id="syncNowBtn" class="btn">Sync Now (Cloud)</button>
+          <button id="sampleDataBtn" class="btn">Load Sample Data</button>
+          <input id="importFileInput" type="file" accept=".json,application/json" hidden />
+        </section>
+
+        <section class="form-section">
+          <h3>Recurring Rules</h3>
+          <ul id="recurringList" class="recurring-list"></ul>
+        </section>
       </aside>
 
       <section class="panel data-panel">
-        <h3>Entries</h3>
+        <div class="panel-head">
+          <h3>Entries</h3>
+          <p id="entryCount" class="panel-meta">0 shown</p>
+        </div>
+
         <div class="filters">
           <label>Type
             <select id="filterType">
@@ -127,17 +171,17 @@
     </section>
 
     <section class="layout charts">
-      <article class="panel">
+      <article class="panel chart-panel">
         <h3>Monthly Expense Trend</h3>
         <canvas id="monthChart" height="220"></canvas>
       </article>
-      <article class="panel">
+      <article class="panel chart-panel">
         <h3>Top Expense Categories</h3>
         <canvas id="categoryChart" height="220"></canvas>
       </article>
     </section>
 
-    <p id="status" class="status">Ready.</p>
+    <p id="status" class="status" role="status" aria-live="polite">Ready.</p>
   </main>
 
   <dialog id="helpDialog">
@@ -146,7 +190,9 @@
     <p>2. Add each income and expense when it happens.</p>
     <p>3. Use filters/search to find older entries.</p>
     <p>4. Use Export Backup and Import Backup to save/restore your data.</p>
-    <form method="dialog"><button class="btn primary">Close</button></form>
+    <form method="dialog">
+      <button class="btn primary">Close</button>
+    </form>
   </dialog>
 
   <dialog id="editDialog">
@@ -182,6 +228,6 @@
     <button id="onboardSkipBtn" class="btn" type="button">Skip</button>
   </dialog>
 
-  <script src="app.js?v=7"></script>
+  <script src="app.js?v=8"></script>
 </body>
 </html>

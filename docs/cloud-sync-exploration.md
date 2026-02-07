@@ -16,6 +16,11 @@ This document outlines practical ways to add optional cloud sync without breakin
 - Current cloud mode is a safe stub (`cloud-stub`) that mirrors snapshots for architecture testing only.
 - Manual `Sync Now (Cloud)` action is available in the web UI for explicit sync checks.
 
+### UI Integration Notes (2026-02-07 Refresh)
+- The modernized UI keeps cloud behavior unchanged; cloud sync remains manual and opt-in.
+- Status banner now visually distinguishes cloud/info messages from success and error states.
+- Visual redesign does not modify storage payload shape or adapter contracts.
+
 ## Goals
 - Keep local-first behavior as default.
 - Make sync optional and explicit (opt-in).
@@ -67,7 +72,7 @@ Best fit:
 ## Recommended Path
 1. Start with Option A (Supabase) for web app only.
 2. Keep desktop app local-only until API design stabilizes.
-3. Add manual "Sync Now" button before background auto-sync.
+3. Add manual `Sync Now` button before background auto-sync.
 4. Use "last write wins" with visible conflict warning for v1.
 
 ## Minimal Data Model
@@ -83,8 +88,8 @@ Best fit:
 - Keep local backup export even when cloud sync is enabled.
 
 ## Rollout Plan
-1. Add cloud adapter interface in web app code (`localStorage` remains default).
-2. Implement auth + manual sync flow behind a feature flag.
+1. Keep current local adapter as default and feature-flag all cloud paths.
+2. Implement auth plus manual sync flow behind a feature flag.
 3. Add conflict and offline handling tests.
 4. Run limited beta with a small set of users/devices.
 5. Decide whether to expand to desktop app sync.

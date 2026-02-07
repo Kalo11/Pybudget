@@ -1,8 +1,16 @@
-﻿# BudgetBeacon
+# BudgetBeacon
 
 BudgetBeacon is a personal budget tracker with two interfaces:
 - Desktop app (`tkinter`) for local use
-- Responsive web app (HTML/CSS/JS) for phone + desktop browser use
+- Modern responsive web app (HTML/CSS/JS) for phone and desktop browser use
+
+## Web UI Refresh (2026-02-07)
+- Modernized dashboard layout and visual hierarchy
+- Budget usage progress meter with near-limit and over-budget feedback
+- Improved entries table readability (income/expense type chips plus styled amounts)
+- Tone-aware status banner for success/error/info feedback
+- Better responsive behavior across desktop/tablet/mobile breakpoints
+- Reduced-motion support and accessible live-status region
 
 ## Screenshots
 Add screenshots to `docs/screenshots/` and update these links:
@@ -44,8 +52,11 @@ python budget_app.py
 - Edit and delete existing entries
 - Recurring entry rules (weekly/monthly) with automatic due posting
 - Filter/search entries by type/category/text
-- Monthly budget goal + live summary cards
+- Monthly budget goal plus live summary cards
+- Budget usage progress bar with over-budget warning state
 - Built-in charts (monthly expense trend, top expense categories)
+- Modern table styling with type badges and entry count summary
+- Status banner with inferred message tones (success/error/info)
 - Backup/restore (web JSON export/import)
 - Onboarding flow and sample-data toggle (web)
 - CSV import/export (desktop)
@@ -58,7 +69,7 @@ python budget_app.py
 
 ## Known Limits
 - Web app data is per-browser unless manually backed up/imported.
-- No user accounts/cloud sync yet.
+- No user accounts/full cloud sync yet.
 - Desktop and web data stores are separate.
 - Desktop UI is designed for desktop OS windows (not mobile-native).
 
@@ -75,4 +86,4 @@ See: `CHANGELOG.md`
 
 ## Notes
 - `.gitignore` excludes local environment files and `budget_data.json`.
-- This project is local-first and does not send data anywhere.
+- This project is local-first and does not send data anywhere by default.
