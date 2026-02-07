@@ -42,6 +42,7 @@ python budget_app.py
 ## Core Features
 - Add income and expense entries
 - Edit and delete existing entries
+- Recurring entry rules (weekly/monthly) with automatic due posting
 - Filter/search entries by type/category/text
 - Monthly budget goal + live summary cards
 - Built-in charts (monthly expense trend, top expense categories)
@@ -53,6 +54,7 @@ python budget_app.py
 - Desktop app: `budget_data.json`
 - Web app: browser `localStorage`
 - Web backup file: exported `.json` snapshots
+- Recurring rules are stored in web app `localStorage` backups
 
 ## Known Limits
 - Web app data is per-browser unless manually backed up/imported.

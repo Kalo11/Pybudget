@@ -7,6 +7,12 @@ All notable changes to BudgetBeacon are documented here.
 - Deployment guide for Vercel/Netlify/GitHub Pages
 - Cloud sync exploration
 
+## [2026-02-06] - v0.7.0
+### Added
+- Web recurring entry rules (weekly/monthly)
+- Automatic posting of due recurring entries on app start
+- Recurring rule list management (view/remove)
+
 ## [2026-02-06] - v0.6.0
 ### Added
 - Web onboarding flow (3 steps)

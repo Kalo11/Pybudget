@@ -50,6 +50,20 @@
           <input id="noteInput" type="text" placeholder="Example: weekly groceries" />
         </label>
 
+        <label class="checkline">
+          <input id="recurringToggleInput" type="checkbox" />
+          Repeat this entry automatically
+        </label>
+        <label>Frequency
+          <select id="recurringFrequencyInput">
+            <option value="weekly">Weekly</option>
+            <option value="monthly">Monthly</option>
+          </select>
+        </label>
+        <label>Start Date
+          <input id="recurringStartInput" type="date" />
+        </label>
+
         <div class="row">
           <button id="saveBtn" class="btn primary">Save Entry</button>
           <button id="clearBtn" class="btn">Clear</button>
@@ -66,6 +80,9 @@
         </div>
         <button id="sampleDataBtn" class="btn">Load Sample Data</button>
         <input id="importFileInput" type="file" accept=".json,application/json" hidden />
+
+        <h3>Recurring Rules</h3>
+        <ul id="recurringList" class="recurring-list"></ul>
       </aside>
 
       <section class="panel data-panel">
@@ -164,6 +181,6 @@
     <button id="onboardSkipBtn" class="btn" type="button">Skip</button>
   </dialog>
 
-  <script src="app.js?v=4"></script>
+  <script src="app.js?v=5"></script>
 </body>
 </html>

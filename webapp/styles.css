@@ -230,6 +230,18 @@ select:focus {
   margin: 6px 0 12px;
 }
 
+.checkline {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 4px 0 10px;
+}
+
+.checkline input[type="checkbox"] {
+  width: auto;
+  margin: 0;
+}
+
 .btn {
   cursor: pointer;
   background: #fff;
@@ -323,6 +335,38 @@ tbody tr:hover {
   color: var(--muted);
 }
 
+.recurring-list {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.recurring-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  padding: 8px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #f7fbff;
+  font-size: 0.85rem;
+}
+
+.recurring-delete {
+  width: auto;
+  margin: 0;
+  padding: 6px 10px;
+}
+
+.recurring-empty {
+  color: var(--muted);
+  font-size: 0.88rem;
+  padding: 6px 2px;
+}
+
 dialog {
   border: 1px solid var(--line);
   border-radius: 14px;
@@ -384,5 +428,10 @@ dialog::backdrop {
   .action-btn {
     width: 100%;
     margin: 0 0 6px;
+  }
+
+  .recurring-item {
+    flex-direction: column;
+    align-items: flex-start;
   }
 }

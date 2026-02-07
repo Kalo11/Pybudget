@@ -36,6 +36,10 @@ const el = {
   categoryInput: document.getElementById("categoryInput"),
   amountInput: document.getElementById("amountInput"),
   noteInput: document.getElementById("noteInput"),
+  recurringToggleInput: document.getElementById("recurringToggleInput"),
+  recurringFrequencyInput: document.getElementById("recurringFrequencyInput"),
+  recurringStartInput: document.getElementById("recurringStartInput"),
+  recurringList: document.getElementById("recurringList"),
   saveBtn: document.getElementById("saveBtn"),
   clearBtn: document.getElementById("clearBtn"),
   budgetInput: document.getElementById("budgetInput"),
@@ -76,8 +80,12 @@ const el = {
 };
 
 wire();
+const addedRecurringEntries = applyRecurringEntries();
 render();
 maybeStartOnboarding();
+if (addedRecurringEntries > 0) {
+  setStatus(`Added ${addedRecurringEntries} recurring entr${addedRecurringEntries === 1 ? "y" : "ies"}.`);
+}
 
 function wire() {
   el.typeInput.addEventListener("change", refreshCategoryInput);
@@ -106,6 +114,7 @@ function wire() {
   el.saveEditBtn.addEventListener("click", saveEditedEntry);
   el.cancelEditBtn.addEventListener("click", closeEditDialog);
   el.rows.addEventListener("click", handleTableActionClick);
+  el.recurringList.addEventListener("click", handleRecurringListClick);
 
   el.onboardBackBtn.addEventListener("click", goOnboardingBack);
   el.onboardNextBtn.addEventListener("click", goOnboardingNext);
@@ -116,20 +125,24 @@ function wire() {
 
 function load() {
   const raw = localStorage.getItem(STORAGE_KEY) || readLegacyData();
-  if (!raw) return { budget: 0, entries: [] };
+  if (!raw) return { budget: 0, entries: [], recurringRules: [] };
   try {
     const parsed = JSON.parse(raw);
     const rawEntries = Array.isArray(parsed.entries) ? parsed.entries : [];
+    const rawRules = Array.isArray(parsed.recurringRules) ? parsed.recurringRules : [];
     const parsedBudget = Number(parsed.budget);
     const budget = Number.isFinite(parsedBudget) && parsedBudget >= 0 ? parsedBudget : 0;
     return {
       budget,
       entries: rawEntries
         .map((entry) => sanitizeEntry(entry))
-        .filter((entry) => entry !== null)
+        .filter((entry) => entry !== null),
+      recurringRules: rawRules
+        .map((rule) => sanitizeRecurringRule(rule))
+        .filter((rule) => rule !== null)
     };
   } catch {
-    return { budget: 0, entries: [] };
+    return { budget: 0, entries: [], recurringRules: [] };
   }
 }
 
@@ -200,16 +213,42 @@ function addEntry() {
     createdAt: new Date().toISOString()
   });
 
+  if (el.recurringToggleInput.checked) {
+    createRecurringRuleFromForm({ type, category, amount, note });
+  }
+
   save();
   clearForm();
   render();
   setStatus("Entry saved.");
 }
 
+function createRecurringRuleFromForm(entry) {
+  const frequency = el.recurringFrequencyInput.value === "weekly" ? "weekly" : "monthly";
+  const selectedDate = parseDateInput(el.recurringStartInput.value) || todayDate();
+  const nextDueDate = normalizeNextDueDate(selectedDate, frequency, true);
+
+  const rule = {
+    id: makeId(),
+    type: entry.type,
+    category: entry.category,
+    amount: entry.amount,
+    note: entry.note,
+    frequency,
+    nextDue: toDateInputValue(nextDueDate),
+    active: true
+  };
+
+  state.recurringRules.unshift(rule);
+}
+
 function clearForm() {
   refreshCategoryInput();
   el.amountInput.value = "";
   el.noteInput.value = "";
+  el.recurringToggleInput.checked = false;
+  el.recurringFrequencyInput.value = "monthly";
+  el.recurringStartInput.value = toDateInputValue(todayDate());
 }
 
 function saveBudget() {
@@ -263,14 +302,107 @@ function render() {
   refreshFilterCategories();
   refreshSampleButton();
   el.budgetInput.value = state.budget || "";
+  if (!el.recurringStartInput.value) {
+    el.recurringStartInput.value = toDateInputValue(todayDate());
+  }
   renderSummary();
   renderTable();
+  renderRecurringRules();
   drawCharts();
 }
 
 function refreshSampleButton() {
   const hasSample = state.entries.some(isSampleEntry);
   el.sampleDataBtn.textContent = hasSample ? "Clear Sample Data" : "Load Sample Data";
+}
+
+function renderRecurringRules() {
+  el.recurringList.innerHTML = "";
+  const rules = Array.isArray(state.recurringRules) ? state.recurringRules : [];
+
+  if (rules.length === 0) {
+    const li = document.createElement("li");
+    li.className = "recurring-empty";
+    li.textContent = "No recurring rules yet.";
+    el.recurringList.appendChild(li);
+    return;
+  }
+
+  const fragment = document.createDocumentFragment();
+  rules.forEach((rule) => {
+    const li = document.createElement("li");
+    li.className = "recurring-item";
+
+    const label = document.createElement("span");
+    label.textContent = `${capitalize(rule.frequency)}: ${rule.type} ${formatMoney(rule.amount)} • ${rule.category} • next ${rule.nextDue}`;
+
+    const deleteBtn = document.createElement("button");
+    deleteBtn.className = "btn recurring-delete";
+    deleteBtn.textContent = "Remove";
+    deleteBtn.dataset.action = "delete-recurring";
+    deleteBtn.dataset.id = rule.id;
+
+    li.appendChild(label);
+    li.appendChild(deleteBtn);
+    fragment.appendChild(li);
+  });
+
+  el.recurringList.appendChild(fragment);
+}
+
+function handleRecurringListClick(event) {
+  const target = event.target;
+  if (!(target instanceof HTMLElement)) return;
+  if (target.dataset.action !== "delete-recurring") return;
+  const ruleId = target.dataset.id;
+  if (!ruleId) return;
+
+  if (!confirm("Remove this recurring rule?")) return;
+  state.recurringRules = state.recurringRules.filter((rule) => rule.id !== ruleId);
+  save();
+  renderRecurringRules();
+  setStatus("Recurring rule removed.");
+}
+
+function applyRecurringEntries() {
+  const rules = Array.isArray(state.recurringRules) ? state.recurringRules : [];
+  if (!rules.length) return 0;
+
+  const today = todayDate();
+  let added = 0;
+
+  rules.forEach((rule) => {
+    if (!rule.active) return;
+
+    let due = parseDateInput(rule.nextDue);
+    if (!due) {
+      due = todayDate();
+    }
+
+    let loopGuard = 0;
+    while (due.getTime() <= today.getTime() && loopGuard < 366) {
+      const entry = {
+        id: makeId(),
+        type: rule.type,
+        category: rule.category,
+        amount: rule.amount,
+        note: rule.note || "Recurring entry",
+        createdAt: due.toISOString(),
+        meta: { recurring: true, recurringRuleId: rule.id }
+      };
+      state.entries.unshift(entry);
+      added += 1;
+      due = nextOccurrence(due, rule.frequency);
+      loopGuard += 1;
+    }
+
+    rule.nextDue = toDateInputValue(due);
+  });
+
+  if (added > 0) {
+    save();
+  }
+  return added;
 }
 
 function filteredEntries() {
@@ -352,7 +484,8 @@ function exportBackup() {
     app: "BudgetBeacon",
     version: 1,
     budget: state.budget,
-    entries: state.entries
+    entries: state.entries,
+    recurringRules: state.recurringRules
   };
 
   const blob = new Blob([JSON.stringify(snapshot, null, 2)], { type: "application/json" });
@@ -377,6 +510,7 @@ function importBackupFromFile(event) {
     try {
       const parsed = JSON.parse(String(reader.result || "{}"));
       const importedEntries = Array.isArray(parsed.entries) ? parsed.entries : [];
+      const importedRules = Array.isArray(parsed.recurringRules) ? parsed.recurringRules : [];
       const importedBudget = Number(parsed.budget || 0);
 
       if (!confirm("Import this backup? This will replace your current web data.")) {
@@ -387,11 +521,19 @@ function importBackupFromFile(event) {
       state.entries = importedEntries
         .map((entry) => sanitizeEntry(entry))
         .filter((entry) => entry !== null);
+      state.recurringRules = importedRules
+        .map((rule) => sanitizeRecurringRule(rule))
+        .filter((rule) => rule !== null);
       state.budget = Number.isFinite(importedBudget) && importedBudget >= 0 ? importedBudget : 0;
 
+      const added = applyRecurringEntries();
       save();
       render();
-      setStatus("Backup imported.");
+      if (added > 0) {
+        setStatus(`Backup imported. Added ${added} due recurring entr${added === 1 ? "y" : "ies"}.`);
+      } else {
+        setStatus("Backup imported.");
+      }
     } catch {
       setStatus("Could not import backup file.");
     } finally {
@@ -420,6 +562,29 @@ function sanitizeEntry(entry) {
     note,
     createdAt,
     meta: typeof entry.meta === "object" && entry.meta !== null ? entry.meta : undefined
+  };
+}
+
+function sanitizeRecurringRule(rule) {
+  if (!rule || typeof rule !== "object") return null;
+  const type = rule.type === "income" ? "income" : "expense";
+  const category = String(rule.category || "").trim();
+  const amount = Number(rule.amount);
+  const note = String(rule.note || "");
+  const frequency = rule.frequency === "weekly" ? "weekly" : "monthly";
+  const nextDueDate = parseDateInput(rule.nextDue) || todayDate();
+
+  if (!category || !Number.isFinite(amount) || amount < 0) return null;
+
+  return {
+    id: String(rule.id || makeId()),
+    type,
+    category,
+    amount,
+    note,
+    frequency,
+    nextDue: toDateInputValue(nextDueDate),
+    active: rule.active !== false
   };
 }
 
@@ -641,6 +806,63 @@ function formatDateTime(value) {
     return String(value || "");
   }
   return date.toLocaleString();
+}
+
+function parseDateInput(value) {
+  if (!value) return null;
+  const [year, month, day] = String(value).split("-").map((part) => Number(part));
+  if (!Number.isFinite(year) || !Number.isFinite(month) || !Number.isFinite(day)) return null;
+  const parsed = new Date(year, month - 1, day);
+  if (Number.isNaN(parsed.getTime())) return null;
+  parsed.setHours(0, 0, 0, 0);
+  return parsed;
+}
+
+function todayDate() {
+  const now = new Date();
+  now.setHours(0, 0, 0, 0);
+  return now;
+}
+
+function toDateInputValue(dateLike) {
+  const date = new Date(dateLike);
+  if (Number.isNaN(date.getTime())) {
+    return "";
+  }
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function nextOccurrence(date, frequency) {
+  const next = new Date(date);
+  if (frequency === "weekly") {
+    next.setDate(next.getDate() + 7);
+  } else {
+    next.setMonth(next.getMonth() + 1);
+  }
+  next.setHours(0, 0, 0, 0);
+  return next;
+}
+
+function normalizeNextDueDate(date, frequency, skipToday) {
+  const today = todayDate();
+  const current = new Date(date);
+  current.setHours(0, 0, 0, 0);
+
+  if (!skipToday) return current;
+  while (current.getTime() <= today.getTime()) {
+    const advanced = nextOccurrence(current, frequency);
+    current.setTime(advanced.getTime());
+  }
+  return current;
+}
+
+function capitalize(value) {
+  const text = String(value || "");
+  if (!text) return text;
+  return text.charAt(0).toUpperCase() + text.slice(1);
 }
 
 function openDialog(dialog) {
