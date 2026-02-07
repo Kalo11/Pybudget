@@ -118,7 +118,7 @@ def format_currency(amount: float) -> str:
 class BudgetAppGUI:
     def __init__(self, root: tk.Tk) -> None:
         self.root = root
-        self.root.title("Pybudget")
+        self.root.title("BudgetBeacon")
         self.root.geometry("1180x760")
         self.root.minsize(1024, 680)
         self.root.configure(bg=Colors.BG)
@@ -184,7 +184,7 @@ class BudgetAppGUI:
 
         header = ttk.Frame(self.root, padding=(18, 14, 18, 8), style="TFrame")
         header.grid(row=0, column=0, sticky="ew")
-        ttk.Label(header, text="Pybudget", style="Title.TLabel").pack(side="left")
+        ttk.Label(header, text="BudgetBeacon", style="Title.TLabel").pack(side="left")
         ttk.Button(header, text="How To Use", command=self.show_help).pack(side="right")
 
         content = ttk.Frame(self.root, padding=(18, 8, 18, 12))
@@ -391,7 +391,7 @@ class BudgetAppGUI:
         if self.data.get("transactions"):
             return
         messagebox.showinfo(
-            "Welcome to Pybudget",
+            "Welcome to BudgetBeacon",
             "Start with 2 steps:\n\n1) Set your monthly budget goal\n2) Add each expense or income as it happens\n\nUse 'How To Use' any time for a quick guide.",
         )
 
@@ -619,7 +619,7 @@ class BudgetAppGUI:
             title="Export Entries",
             defaultextension=".csv",
             filetypes=[("CSV files", "*.csv")],
-            initialfile="pybudget_entries.csv",
+            initialfile="budgetbeacon_entries.csv",
         )
         if not path:
             return

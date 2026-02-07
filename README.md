@@ -1,4 +1,4 @@
-﻿# Pybudget
+﻿# BudgetBeacon
 
 A budget tracker with:
 - Desktop app (`tkinter`)

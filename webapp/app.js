@@ -1,4 +1,5 @@
-﻿const STORAGE_KEY = "pybudget_web_v1";
+﻿const STORAGE_KEY = "budgetbeacon_web_v1";
+const LEGACY_STORAGE_KEYS = ["pybudget_web_v1"];
 
 const EXPENSE_CATEGORIES = [
   "Groceries", "Rent", "Utilities", "Transportation", "Dining", "Entertainment",
@@ -65,7 +66,7 @@ function wire() {
 }
 
 function load() {
-  const raw = localStorage.getItem(STORAGE_KEY);
+  const raw = localStorage.getItem(STORAGE_KEY) || readLegacyData();
   if (!raw) return { budget: 0, entries: [] };
   try {
     const parsed = JSON.parse(raw);
@@ -76,6 +77,14 @@ function load() {
   } catch {
     return { budget: 0, entries: [] };
   }
+}
+
+function readLegacyData() {
+  for (const key of LEGACY_STORAGE_KEYS) {
+    const raw = localStorage.getItem(key);
+    if (raw) return raw;
+  }
+  return null;
 }
 
 function save() {
@@ -350,3 +359,6 @@ function appendCell(row, value) {
   td.textContent = value;
   row.appendChild(td);
 }
+
+
+
