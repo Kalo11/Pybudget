@@ -64,6 +64,7 @@
           <button id="exportDataBtn" class="btn">Export Backup</button>
           <button id="importDataBtn" class="btn">Import Backup</button>
         </div>
+        <button id="sampleDataBtn" class="btn">Load Sample Data</button>
         <input id="importFileInput" type="file" accept=".json,application/json" hidden />
       </aside>
 
@@ -153,6 +154,16 @@
     </div>
   </dialog>
 
-  <script src="app.js?v=2"></script>
+  <dialog id="onboardingDialog">
+    <h3 id="onboardTitle">Welcome to BudgetBeacon</h3>
+    <p id="onboardBody">Let us quickly set up your budget flow.</p>
+    <div class="row">
+      <button id="onboardBackBtn" class="btn" type="button">Back</button>
+      <button id="onboardNextBtn" class="btn primary" type="button">Next</button>
+    </div>
+    <button id="onboardSkipBtn" class="btn" type="button">Skip</button>
+  </dialog>
+
+  <script src="app.js?v=3"></script>
 </body>
 </html>

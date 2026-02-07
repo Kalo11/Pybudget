@@ -1,5 +1,6 @@
 ﻿const STORAGE_KEY = "budgetbeacon_web_v1";
 const LEGACY_STORAGE_KEYS = ["pybudget_web_v1"];
+const ONBOARDING_KEY = "budgetbeacon_onboarding_seen_v1";
 
 const EXPENSE_CATEGORIES = [
   "Groceries", "Rent", "Utilities", "Transportation", "Dining", "Entertainment",
@@ -11,8 +12,24 @@ const INCOME_CATEGORIES = [
   "Salary", "Freelance", "Business", "Interest", "Dividends", "Rental Income", "Refund", "Gift", "Other Income"
 ];
 
+const onboardingSteps = [
+  {
+    title: "Welcome to BudgetBeacon",
+    body: "Step 1 of 3: Start by setting your monthly budget goal on the left side."
+  },
+  {
+    title: "Add Your Money Activity",
+    body: "Step 2 of 3: Add each income and expense as it happens. This keeps totals accurate."
+  },
+  {
+    title: "Track and Protect Data",
+    body: "Step 3 of 3: Use search and filters to find entries, then export backup files often."
+  }
+];
+
 const state = load();
 let editingEntryId = null;
+let onboardingStep = 0;
 
 const el = {
   typeInput: document.getElementById("typeInput"),
@@ -25,6 +42,7 @@ const el = {
   saveBudgetBtn: document.getElementById("saveBudgetBtn"),
   exportDataBtn: document.getElementById("exportDataBtn"),
   importDataBtn: document.getElementById("importDataBtn"),
+  sampleDataBtn: document.getElementById("sampleDataBtn"),
   importFileInput: document.getElementById("importFileInput"),
   filterType: document.getElementById("filterType"),
   filterCategory: document.getElementById("filterCategory"),
@@ -47,12 +65,19 @@ const el = {
   editNoteInput: document.getElementById("editNoteInput"),
   saveEditBtn: document.getElementById("saveEditBtn"),
   cancelEditBtn: document.getElementById("cancelEditBtn"),
+  onboardingDialog: document.getElementById("onboardingDialog"),
+  onboardTitle: document.getElementById("onboardTitle"),
+  onboardBody: document.getElementById("onboardBody"),
+  onboardBackBtn: document.getElementById("onboardBackBtn"),
+  onboardNextBtn: document.getElementById("onboardNextBtn"),
+  onboardSkipBtn: document.getElementById("onboardSkipBtn"),
   monthChart: document.getElementById("monthChart"),
   categoryChart: document.getElementById("categoryChart")
 };
 
 wire();
 render();
+maybeStartOnboarding();
 
 function wire() {
   el.typeInput.addEventListener("change", refreshCategoryInput);
@@ -61,6 +86,7 @@ function wire() {
   el.saveBudgetBtn.addEventListener("click", saveBudget);
   el.exportDataBtn.addEventListener("click", exportBackup);
   el.importDataBtn.addEventListener("click", () => el.importFileInput.click());
+  el.sampleDataBtn.addEventListener("click", toggleSampleData);
   el.importFileInput.addEventListener("change", importBackupFromFile);
 
   [el.filterType, el.filterCategory, el.searchInput].forEach((node) => {
@@ -79,6 +105,11 @@ function wire() {
   el.editTypeInput.addEventListener("change", refreshEditCategoryInput);
   el.saveEditBtn.addEventListener("click", saveEditedEntry);
   el.cancelEditBtn.addEventListener("click", closeEditDialog);
+
+  el.onboardBackBtn.addEventListener("click", goOnboardingBack);
+  el.onboardNextBtn.addEventListener("click", goOnboardingNext);
+  el.onboardSkipBtn.addEventListener("click", completeOnboarding);
+
   window.addEventListener("resize", drawCharts);
 }
 
@@ -118,7 +149,7 @@ function categoriesFor(type) {
 
 function refreshCategoryInput() {
   const type = el.typeInput.value;
-  const dynamic = Array.from(new Set(state.entries.filter(e => e.type === type).map(e => e.category))).sort();
+  const dynamic = Array.from(new Set(state.entries.filter((e) => e.type === type).map((e) => e.category))).sort();
   const choices = Array.from(new Set([...categoriesFor(type), ...dynamic]));
 
   el.categoryInput.innerHTML = "";
@@ -184,13 +215,56 @@ function saveBudget() {
   setStatus("Budget goal saved.");
 }
 
+function toggleSampleData() {
+  const hasSample = state.entries.some((entry) => entry.note === "[sample]");
+  if (hasSample) {
+    if (!confirm("Clear sample entries from your data?")) return;
+    state.entries = state.entries.filter((entry) => entry.note !== "[sample]");
+    save();
+    render();
+    setStatus("Sample data removed.");
+    return;
+  }
+
+  if (state.entries.length > 0 && !confirm("Load sample entries and keep your current entries?")) {
+    return;
+  }
+
+  const now = new Date();
+  const daysAgo = (days) => new Date(now.getTime() - days * 86400000).toISOString();
+  const sampleEntries = [
+    { id: crypto.randomUUID(), type: "income", category: "Salary", amount: 4200, note: "[sample]", createdAt: daysAgo(25) },
+    { id: crypto.randomUUID(), type: "expense", category: "Rent", amount: 1450, note: "[sample]", createdAt: daysAgo(24) },
+    { id: crypto.randomUUID(), type: "expense", category: "Groceries", amount: 120, note: "[sample]", createdAt: daysAgo(20) },
+    { id: crypto.randomUUID(), type: "expense", category: "Transportation", amount: 65, note: "[sample]", createdAt: daysAgo(14) },
+    { id: crypto.randomUUID(), type: "expense", category: "Dining", amount: 54, note: "[sample]", createdAt: daysAgo(10) },
+    { id: crypto.randomUUID(), type: "income", category: "Freelance", amount: 380, note: "[sample]", createdAt: daysAgo(8) },
+    { id: crypto.randomUUID(), type: "expense", category: "Utilities", amount: 160, note: "[sample]", createdAt: daysAgo(5) }
+  ];
+
+  if (state.budget === 0) {
+    state.budget = 3000;
+  }
+
+  state.entries.unshift(...sampleEntries);
+  save();
+  render();
+  setStatus("Sample data loaded.");
+}
+
 function render() {
   refreshCategoryInput();
   refreshFilterCategories();
+  refreshSampleButton();
   el.budgetInput.value = state.budget || "";
   renderSummary();
   renderTable();
   drawCharts();
+}
+
+function refreshSampleButton() {
+  const hasSample = state.entries.some((entry) => entry.note === "[sample]");
+  el.sampleDataBtn.textContent = hasSample ? "Clear Sample Data" : "Load Sample Data";
 }
 
 function filteredEntries() {
@@ -415,7 +489,7 @@ function drawMonthChart() {
   ctx.clearRect(0, 0, width, height);
 
   const map = new Map();
-  state.entries.filter(e => e.type === "expense").forEach((e) => {
+  state.entries.filter((e) => e.type === "expense").forEach((e) => {
     const month = e.createdAt.slice(0, 7);
     map.set(month, (map.get(month) || 0) + e.amount);
   });
@@ -462,7 +536,7 @@ function drawCategoryChart() {
   ctx.clearRect(0, 0, width, height);
 
   const totals = new Map();
-  state.entries.filter(e => e.type === "expense").forEach((e) => {
+  state.entries.filter((e) => e.type === "expense").forEach((e) => {
     totals.set(e.category, (totals.get(e.category) || 0) + e.amount);
   });
 
@@ -524,5 +598,40 @@ function appendCell(row, value) {
   row.appendChild(td);
 }
 
+function maybeStartOnboarding() {
+  const seen = localStorage.getItem(ONBOARDING_KEY) === "1";
+  if (seen) return;
+  onboardingStep = 0;
+  renderOnboardingStep();
+  el.onboardingDialog.showModal();
+}
 
+function renderOnboardingStep() {
+  const step = onboardingSteps[onboardingStep];
+  el.onboardTitle.textContent = step.title;
+  el.onboardBody.textContent = step.body;
+  el.onboardBackBtn.disabled = onboardingStep === 0;
+  el.onboardNextBtn.textContent = onboardingStep === onboardingSteps.length - 1 ? "Finish" : "Next";
+}
 
+function goOnboardingBack() {
+  if (onboardingStep === 0) return;
+  onboardingStep -= 1;
+  renderOnboardingStep();
+}
+
+function goOnboardingNext() {
+  if (onboardingStep >= onboardingSteps.length - 1) {
+    completeOnboarding();
+    return;
+  }
+  onboardingStep += 1;
+  renderOnboardingStep();
+}
+
+function completeOnboarding() {
+  localStorage.setItem(ONBOARDING_KEY, "1");
+  if (el.onboardingDialog.open) {
+    el.onboardingDialog.close();
+  }
+}
