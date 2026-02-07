@@ -48,6 +48,7 @@ def typical_categories_for(entry_type: str) -> list[str]:
         return EXPENSE_CATEGORIES[:]
     return DEFAULT_CATEGORIES[:]
 
+
 class Colors:
     BG = "#f4f6fb"
     PANEL = "#ffffff"
@@ -550,7 +551,8 @@ class BudgetAppGUI:
         self.refresh_ui("Entry saved.")
 
     def clear_form(self) -> None:
-        self.category_var.set("")
+        categories = typical_categories_for(self.type_var.get().strip().lower())
+        self.category_var.set(categories[0] if categories else "")
         self.amount_var.set("")
         self.note_var.set("")
         self.status_var.set("Form cleared.")

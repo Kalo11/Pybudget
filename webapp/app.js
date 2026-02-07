@@ -144,6 +144,7 @@ function addEntry() {
 }
 
 function clearForm() {
+  refreshCategoryInput();
   el.amountInput.value = "";
   el.noteInput.value = "";
 }
@@ -201,19 +202,21 @@ function renderTable() {
 
   rows.forEach((entry) => {
     const tr = document.createElement("tr");
-    tr.innerHTML = `
-      <td>${new Date(entry.createdAt).toLocaleString()}</td>
-      <td>${entry.type}</td>
-      <td>${entry.category}</td>
-      <td>${formatMoney(entry.amount)}</td>
-      <td>${entry.note || ""}</td>
-      <td><button class="delete-btn" data-id="${entry.id}">Delete</button></td>
-    `;
-    el.rows.appendChild(tr);
-  });
+    appendCell(tr, new Date(entry.createdAt).toLocaleString());
+    appendCell(tr, entry.type);
+    appendCell(tr, entry.category);
+    appendCell(tr, formatMoney(entry.amount));
+    appendCell(tr, entry.note || "");
 
-  el.rows.querySelectorAll(".delete-btn").forEach((btn) => {
-    btn.addEventListener("click", () => deleteEntry(btn.dataset.id));
+    const actionCell = document.createElement("td");
+    const deleteBtn = document.createElement("button");
+    deleteBtn.className = "delete-btn";
+    deleteBtn.textContent = "Delete";
+    deleteBtn.addEventListener("click", () => deleteEntry(entry.id));
+    actionCell.appendChild(deleteBtn);
+    tr.appendChild(actionCell);
+
+    el.rows.appendChild(tr);
   });
 
   el.emptyState.style.display = rows.length ? "none" : "block";
@@ -235,8 +238,8 @@ function drawCharts() {
 function drawMonthChart() {
   const canvas = el.monthChart;
   const ctx = canvas.getContext("2d");
-  fitCanvas(canvas);
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  const { width, height } = fitCanvas(canvas);
+  ctx.clearRect(0, 0, width, height);
 
   const map = new Map();
   state.entries.filter(e => e.type === "expense").forEach((e) => {
@@ -252,7 +255,10 @@ function drawMonthChart() {
 
   const values = months.map((m) => map.get(m));
   const max = Math.max(...values, 1);
-  const left = 40, top = 20, right = canvas.width - 16, bottom = canvas.height - 30;
+  const left = 40;
+  const top = 20;
+  const right = width - 16;
+  const bottom = height - 30;
 
   ctx.strokeStyle = "#ccd7e6";
   ctx.beginPath();
@@ -279,8 +285,8 @@ function drawMonthChart() {
 function drawCategoryChart() {
   const canvas = el.categoryChart;
   const ctx = canvas.getContext("2d");
-  fitCanvas(canvas);
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  const { width, height } = fitCanvas(canvas);
+  ctx.clearRect(0, 0, width, height);
 
   const totals = new Map();
   state.entries.filter(e => e.type === "expense").forEach((e) => {
@@ -298,8 +304,8 @@ function drawCategoryChart() {
   top.forEach(([name, value]) => {
     const label = name.length > 18 ? `${name.slice(0, 16)}..` : name;
     const x = 120;
-    const full = canvas.width - x - 16;
-    const width = (value / max) * full;
+    const full = width - x - 16;
+    const barWidth = (value / max) * full;
 
     ctx.fillStyle = "#17202a";
     ctx.font = "12px Segoe UI";
@@ -308,7 +314,7 @@ function drawCategoryChart() {
     ctx.fillStyle = "#e4efff";
     ctx.fillRect(x, y, full, 14);
     ctx.fillStyle = "#198754";
-    ctx.fillRect(x, y, width, 14);
+    ctx.fillRect(x, y, barWidth, 14);
 
     ctx.fillStyle = "#5e6a79";
     ctx.fillText(formatMoney(value), x + full - 60, y + 11);
@@ -319,20 +325,28 @@ function drawCategoryChart() {
 function fitCanvas(canvas) {
   const ratio = Math.max(window.devicePixelRatio || 1, 1);
   const w = canvas.clientWidth;
-  const h = canvas.height;
+  const h = canvas.clientHeight;
   canvas.width = Math.floor(w * ratio);
   canvas.height = Math.floor(h * ratio);
-  canvas.getContext("2d").setTransform(ratio, 0, 0, ratio, 0, 0);
+  const ctx = canvas.getContext("2d");
+  ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+  return { width: w, height: h };
 }
 
 function drawCenterText(ctx, canvas, text) {
   ctx.fillStyle = "#5e6a79";
   ctx.font = "14px Segoe UI";
   ctx.textAlign = "center";
-  ctx.fillText(text, canvas.clientWidth / 2, canvas.height / 2);
+  ctx.fillText(text, canvas.clientWidth / 2, canvas.clientHeight / 2);
   ctx.textAlign = "left";
 }
 
 function setStatus(message) {
   el.status.textContent = message;
+}
+
+function appendCell(row, value) {
+  const td = document.createElement("td");
+  td.textContent = value;
+  row.appendChild(td);
 }
