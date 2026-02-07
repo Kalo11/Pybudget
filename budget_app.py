@@ -50,15 +50,16 @@ def typical_categories_for(entry_type: str) -> list[str]:
 
 
 class Colors:
-    BG = "#f4f6fb"
+    BG = "#eef4fb"
     PANEL = "#ffffff"
-    ACCENT = "#1f6feb"
-    ACCENT_SOFT = "#dfeeff"
-    TEXT = "#17202a"
-    MUTED = "#5b6573"
-    INCOME = "#198754"
-    EXPENSE = "#d73a49"
-    GRID = "#d9e0ea"
+    ACCENT = "#0f3b66"
+    ACCENT_SOFT = "#e5eef9"
+    BEACON = "#f4a300"
+    TEXT = "#13263a"
+    MUTED = "#5a6f86"
+    INCOME = "#1f8f55"
+    EXPENSE = "#c63f30"
+    GRID = "#c8d7e8"
 
 
 def load_data() -> dict:
@@ -274,12 +275,20 @@ class BudgetAppGUI:
         self._build_stat_card(stats, 4, "Budget Left", self.remaining_var)
 
     def _build_stat_card(self, parent: ttk.Frame, col: int, label: str, value_var: tk.StringVar) -> None:
+        value_color = Colors.TEXT
+        if label == "Income":
+            value_color = Colors.INCOME
+        elif label == "Expenses":
+            value_color = Colors.EXPENSE
+        elif label == "Budget Left":
+            value_color = Colors.BEACON
+
         card = tk.Frame(parent, bg=Colors.PANEL, bd=0, highlightthickness=1, highlightbackground=Colors.GRID)
         card.grid(row=0, column=col, sticky="nsew", padx=(0 if col == 0 else 8, 0), pady=0)
         tk.Label(card, text=label, bg=Colors.PANEL, fg=Colors.MUTED, font=("Segoe UI", 9, "bold")).pack(
             anchor="w", padx=10, pady=(8, 2)
         )
-        tk.Label(card, textvariable=value_var, bg=Colors.PANEL, fg=Colors.TEXT, font=("Segoe UI", 16, "bold")).pack(
+        tk.Label(card, textvariable=value_var, bg=Colors.PANEL, fg=value_color, font=("Segoe UI", 16, "bold")).pack(
             anchor="w", padx=10, pady=(0, 8)
         )
 
@@ -765,7 +774,7 @@ class BudgetAppGUI:
 
             canvas.create_text(12, y + 8, text=label, anchor="w", fill=Colors.TEXT, font=("Segoe UI", 9))
             canvas.create_rectangle(bar_left, y, bar_right, y + 16, fill=Colors.ACCENT_SOFT, outline="")
-            canvas.create_rectangle(bar_left, y, bar_left + fill_width, y + 16, fill=Colors.INCOME, outline="")
+            canvas.create_rectangle(bar_left, y, bar_left + fill_width, y + 16, fill=Colors.BEACON, outline="")
             canvas.create_text(bar_right, y + 8, text=format_currency(value), anchor="e", fill=Colors.MUTED, font=("Segoe UI", 8, "bold"))
             y += 28
 
