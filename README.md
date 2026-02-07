@@ -1,10 +1,12 @@
 ﻿# Pybudget
 
-A desktop budget tracker built with Python and `tkinter`.
+A budget tracker with:
+- Desktop app (`tkinter`)
+- Responsive web app (HTML/CSS/JS)
 
 ## Features
 - Add income and expense transactions
-- Sort transactions by clicking table headers (ID, date, type, category, amount, note)
+- Sort transactions by clicking table headers (desktop app)
 - Filter by type and category
 - Search transactions by category or note
 - Delete selected transaction
@@ -13,21 +15,31 @@ A desktop budget tracker built with Python and `tkinter`.
 - Built-in charts:
   - Monthly expense trend (last 6 months)
   - Top expense categories
-- CSV export and import
-- Local JSON data storage (`budget_data.json`)
+- CSV export and import (desktop app)
+- Local JSON data storage (`budget_data.json`) for desktop app
+- Browser local storage for web app
 
 ## Requirements
 - Python 3.10+
 
-## Run
+## Run Desktop App
 ```powershell
 python budget_app.py
 ```
 
+## Run Web App
+```powershell
+cd webapp
+python -m http.server 8000
+```
+
+Then open:
+`http://localhost:8000`
+
 ## Data Files
-- `budget_data.json`: app database
-- optional exported CSV files from the Export button
+- `budget_data.json`: desktop app database
+- optional exported CSV files from the desktop app Export button
 
 ## Notes
 - `.gitignore` excludes local environment files and `budget_data.json`.
-- The app is local-first and does not send data anywhere.
+- This project is local-first and does not send data anywhere.

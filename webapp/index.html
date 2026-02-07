@@ -1,0 +1,126 @@
+﻿<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Pybudget Web</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <main class="app">
+    <header class="topbar">
+      <div>
+        <h1>Pybudget Web</h1>
+        <p class="sub">Simple budget tracking on phone and desktop</p>
+      </div>
+      <button id="helpBtn" class="btn ghost">How To Use</button>
+    </header>
+
+    <section class="stats" id="stats">
+      <article class="card"><h2>Income</h2><p id="incomeTotal">$0.00</p></article>
+      <article class="card"><h2>Expenses</h2><p id="expenseTotal">$0.00</p></article>
+      <article class="card"><h2>Balance</h2><p id="balanceTotal">$0.00</p></article>
+      <article class="card"><h2>Budget Goal</h2><p id="budgetGoal">$0.00</p></article>
+      <article class="card"><h2>Budget Left</h2><p id="budgetLeft">$0.00</p></article>
+    </section>
+
+    <section class="layout">
+      <aside class="panel form-panel">
+        <h3>Add Entry</h3>
+        <label>Money Type
+          <select id="typeInput">
+            <option value="expense">Expense</option>
+            <option value="income">Income</option>
+          </select>
+        </label>
+
+        <label>Category
+          <select id="categoryInput"></select>
+        </label>
+
+        <label>Amount
+          <input id="amountInput" type="number" inputmode="decimal" min="0" step="0.01" placeholder="24.99" />
+        </label>
+
+        <label>Note (optional)
+          <input id="noteInput" type="text" placeholder="Example: weekly groceries" />
+        </label>
+
+        <div class="row">
+          <button id="saveBtn" class="btn primary">Save Entry</button>
+          <button id="clearBtn" class="btn">Clear</button>
+        </div>
+
+        <h3>Monthly Budget</h3>
+        <label>Budget Goal
+          <input id="budgetInput" type="number" inputmode="decimal" min="0" step="0.01" placeholder="2000" />
+        </label>
+        <button id="saveBudgetBtn" class="btn">Save Budget Goal</button>
+      </aside>
+
+      <section class="panel data-panel">
+        <h3>Entries</h3>
+        <div class="filters">
+          <label>Type
+            <select id="filterType">
+              <option value="all">All</option>
+              <option value="income">Income</option>
+              <option value="expense">Expense</option>
+            </select>
+          </label>
+          <label>Category
+            <select id="filterCategory">
+              <option value="all">All</option>
+            </select>
+          </label>
+          <label>Search
+            <input id="searchInput" type="text" placeholder="Find by note/category" />
+          </label>
+          <button id="resetFiltersBtn" class="btn">Reset</button>
+        </div>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Type</th>
+                <th>Category</th>
+                <th>Amount</th>
+                <th>Note</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="entryRows"></tbody>
+          </table>
+          <p id="emptyState" class="empty">No entries yet. Add your first one on the left.</p>
+        </div>
+      </section>
+    </section>
+
+    <section class="layout charts">
+      <article class="panel">
+        <h3>Monthly Expense Trend</h3>
+        <canvas id="monthChart" height="220"></canvas>
+      </article>
+      <article class="panel">
+        <h3>Top Expense Categories</h3>
+        <canvas id="categoryChart" height="220"></canvas>
+      </article>
+    </section>
+
+    <p id="status" class="status">Ready.</p>
+  </main>
+
+  <dialog id="helpDialog">
+    <h3>How To Use</h3>
+    <p>1. Set your monthly budget goal.</p>
+    <p>2. Add each income and expense when it happens.</p>
+    <p>3. Use filters/search to find older entries.</p>
+    <p>4. Use Export to save a backup copy later (coming soon in web version).</p>
+    <form method="dialog"><button class="btn primary">Close</button></form>
+  </dialog>
+
+  <script src="app.js"></script>
+</body>
+</html>
