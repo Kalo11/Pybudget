@@ -7,6 +7,10 @@ import tkinter as tk
 from tkinter import filedialog, messagebox, ttk
 
 DATA_FILE = Path("budget_data.json")
+
+
+def default_data() -> dict:
+    return {"monthly_budget": 0.0, "transactions": []}
 EXPENSE_CATEGORIES = [
     "Groceries",
     "Rent",
@@ -64,16 +68,18 @@ class Colors:
 
 def load_data() -> dict:
     if not DATA_FILE.exists():
-        return {"monthly_budget": 0.0, "transactions": []}
+        return default_data()
     try:
         with DATA_FILE.open("r", encoding="utf-8") as file:
             data = json.load(file)
     except (json.JSONDecodeError, OSError):
-        return {"monthly_budget": 0.0, "transactions": []}
+        return default_data()
 
-    if "monthly_budget" not in data:
+    if not isinstance(data, dict):
+        return default_data()
+    if "monthly_budget" not in data or not isinstance(data.get("monthly_budget"), (int, float)):
         data["monthly_budget"] = 0.0
-    if "transactions" not in data:
+    if "transactions" not in data or not isinstance(data.get("transactions"), list):
         data["transactions"] = []
     return data
 
@@ -537,6 +543,10 @@ class BudgetAppGUI:
         if visible:
             self.empty_state_label.grid_forget()
         else:
+            if self.data.get("transactions"):
+                self.empty_state_label.configure(text="No results match your current filters.")
+            else:
+                self.empty_state_label.configure(text="No entries yet. Start by adding your first income or expense on the left.")
             self.empty_state_label.grid(row=2, column=0, sticky="w", pady=(8, 0))
 
         summary = calculate_summary(self.data)

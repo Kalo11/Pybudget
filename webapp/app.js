@@ -119,9 +119,12 @@ function load() {
   if (!raw) return { budget: 0, entries: [] };
   try {
     const parsed = JSON.parse(raw);
+    const rawEntries = Array.isArray(parsed.entries) ? parsed.entries : [];
     return {
       budget: Number(parsed.budget || 0),
-      entries: Array.isArray(parsed.entries) ? parsed.entries : []
+      entries: rawEntries
+        .map((entry) => sanitizeEntry(entry))
+        .filter((entry) => entry !== null)
     };
   } catch {
     return { budget: 0, entries: [] };
@@ -217,10 +220,10 @@ function saveBudget() {
 }
 
 function toggleSampleData() {
-  const hasSample = state.entries.some((entry) => entry.note === "[sample]");
+  const hasSample = state.entries.some(isSampleEntry);
   if (hasSample) {
     if (!confirm("Clear sample entries from your data?")) return;
-    state.entries = state.entries.filter((entry) => entry.note !== "[sample]");
+    state.entries = state.entries.filter((entry) => !isSampleEntry(entry));
     save();
     render();
     setStatus("Sample data removed.");
@@ -234,13 +237,13 @@ function toggleSampleData() {
   const now = new Date();
   const daysAgo = (days) => new Date(now.getTime() - days * 86400000).toISOString();
   const sampleEntries = [
-    { id: makeId(), type: "income", category: "Salary", amount: 4200, note: "[sample]", createdAt: daysAgo(25) },
-    { id: makeId(), type: "expense", category: "Rent", amount: 1450, note: "[sample]", createdAt: daysAgo(24) },
-    { id: makeId(), type: "expense", category: "Groceries", amount: 120, note: "[sample]", createdAt: daysAgo(20) },
-    { id: makeId(), type: "expense", category: "Transportation", amount: 65, note: "[sample]", createdAt: daysAgo(14) },
-    { id: makeId(), type: "expense", category: "Dining", amount: 54, note: "[sample]", createdAt: daysAgo(10) },
-    { id: makeId(), type: "income", category: "Freelance", amount: 380, note: "[sample]", createdAt: daysAgo(8) },
-    { id: makeId(), type: "expense", category: "Utilities", amount: 160, note: "[sample]", createdAt: daysAgo(5) }
+    { id: makeId(), type: "income", category: "Salary", amount: 4200, note: "Monthly paycheck", createdAt: daysAgo(25), meta: { sample: true } },
+    { id: makeId(), type: "expense", category: "Rent", amount: 1450, note: "Apartment", createdAt: daysAgo(24), meta: { sample: true } },
+    { id: makeId(), type: "expense", category: "Groceries", amount: 120, note: "Weekly groceries", createdAt: daysAgo(20), meta: { sample: true } },
+    { id: makeId(), type: "expense", category: "Transportation", amount: 65, note: "Fuel", createdAt: daysAgo(14), meta: { sample: true } },
+    { id: makeId(), type: "expense", category: "Dining", amount: 54, note: "Family dinner", createdAt: daysAgo(10), meta: { sample: true } },
+    { id: makeId(), type: "income", category: "Freelance", amount: 380, note: "Side project", createdAt: daysAgo(8), meta: { sample: true } },
+    { id: makeId(), type: "expense", category: "Utilities", amount: 160, note: "Electric and water", createdAt: daysAgo(5), meta: { sample: true } }
   ];
 
   if (state.budget === 0) {
@@ -264,7 +267,7 @@ function render() {
 }
 
 function refreshSampleButton() {
-  const hasSample = state.entries.some((entry) => entry.note === "[sample]");
+  const hasSample = state.entries.some(isSampleEntry);
   el.sampleDataBtn.textContent = hasSample ? "Clear Sample Data" : "Load Sample Data";
 }
 
@@ -300,6 +303,7 @@ function renderSummary() {
 function renderTable() {
   const rows = filteredEntries();
   el.rows.innerHTML = "";
+  const fragment = document.createDocumentFragment();
 
   rows.forEach((entry) => {
     const tr = document.createElement("tr");
@@ -325,8 +329,9 @@ function renderTable() {
     actionCell.appendChild(deleteBtn);
     tr.appendChild(actionCell);
 
-    el.rows.appendChild(tr);
+    fragment.appendChild(tr);
   });
+  el.rows.appendChild(fragment);
 
   el.emptyState.style.display = rows.length ? "none" : "block";
 }
@@ -411,7 +416,8 @@ function sanitizeEntry(entry) {
     category,
     amount,
     note,
-    createdAt
+    createdAt,
+    meta: typeof entry.meta === "object" && entry.meta !== null ? entry.meta : undefined
   };
 }
 
@@ -595,6 +601,13 @@ function appendCell(row, value) {
   const td = document.createElement("td");
   td.textContent = value;
   row.appendChild(td);
+}
+
+function isSampleEntry(entry) {
+  if (!entry || typeof entry !== "object") return false;
+  if (entry.meta && entry.meta.sample === true) return true;
+  // Backward compatibility with older sample marker
+  return entry.note === "[sample]";
 }
 
 function handleTableActionClick(event) {
