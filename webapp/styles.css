@@ -1,18 +1,18 @@
 ﻿:root {
-  --bg: #fbf8f1;
-  --bg-soft: #f3eee2;
-  --panel: rgba(255, 255, 255, 0.92);
-  --ink: #1c2a2f;
-  --muted: #5c6b6e;
-  --line: #d9d9cc;
-  --accent: #0d7f78;
-  --accent-strong: #075f5a;
-  --accent-soft: #d9f2ef;
-  --gold: #d29a36;
-  --good: #1d7d4d;
-  --bad: #bc3d2f;
+  --bg: #eef4fb;
+  --bg-soft: #dfe9f6;
+  --panel: rgba(255, 255, 255, 0.94);
+  --ink: #12283d;
+  --muted: #5c7088;
+  --line: #c8d7e8;
+  --accent: #0f3b66;
+  --accent-strong: #0a2b4a;
+  --accent-soft: #e5eef9;
+  --gold: #f4a300;
+  --good: #1f8f55;
+  --bad: #c63f30;
   --radius: 16px;
-  --shadow: 0 12px 30px rgba(34, 42, 47, 0.08);
+  --shadow: 0 12px 30px rgba(28, 44, 66, 0.12);
 }
 
 * {
@@ -25,8 +25,8 @@ body {
   font-family: "Trebuchet MS", "Gill Sans", "Century Gothic", sans-serif;
   color: var(--ink);
   background:
-    radial-gradient(circle at 85% 10%, #f6ead1 0%, transparent 36%),
-    radial-gradient(circle at 10% 20%, #dff3ec 0%, transparent 34%),
+    radial-gradient(circle at 85% 10%, #ffe3b3 0%, transparent 36%),
+    radial-gradient(circle at 10% 20%, #dce9fb 0%, transparent 34%),
     linear-gradient(145deg, var(--bg), var(--bg-soft));
   position: relative;
   overflow-x: hidden;
@@ -36,14 +36,14 @@ body {
   position: fixed;
   border-radius: 999px;
   filter: blur(8px);
-  opacity: 0.4;
+  opacity: 0.38;
   z-index: -3;
 }
 
 .orb-a {
   width: 260px;
   height: 260px;
-  background: #ffdca0;
+  background: #ffd491;
   top: -90px;
   right: -70px;
 }
@@ -51,7 +51,7 @@ body {
 .orb-b {
   width: 320px;
   height: 320px;
-  background: #bde8df;
+  background: #bad1ef;
   left: -130px;
   bottom: -120px;
 }
@@ -60,7 +60,7 @@ body {
   position: fixed;
   inset: 0;
   z-index: -4;
-  background-image: linear-gradient(rgba(25, 45, 50, 0.045) 1px, transparent 1px), linear-gradient(90deg, rgba(25, 45, 50, 0.045) 1px, transparent 1px);
+  background-image: linear-gradient(rgba(15, 59, 102, 0.06) 1px, transparent 1px), linear-gradient(90deg, rgba(15, 59, 102, 0.06) 1px, transparent 1px);
   background-size: 24px 24px;
   mask-image: radial-gradient(circle at 50% 50%, black 40%, transparent 90%);
 }
@@ -76,7 +76,12 @@ body {
   justify-content: space-between;
   align-items: flex-start;
   gap: 14px;
-  margin-bottom: 6px;
+  margin-bottom: 10px;
+  background: linear-gradient(135deg, var(--accent), var(--accent-strong));
+  border: 1px solid #274e75;
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  box-shadow: var(--shadow);
 }
 
 h1 {
@@ -84,12 +89,27 @@ h1 {
   font-family: "Rockwell", "Palatino Linotype", serif;
   font-size: clamp(1.7rem, 2.8vw, 2.5rem);
   letter-spacing: 0.2px;
+  color: #ffffff;
 }
 
 .sub {
   margin: 4px 0 0;
-  color: var(--muted);
+  color: #d9e7f8;
   font-size: 0.96rem;
+}
+
+.brand-tag {
+  margin: 6px 0 0;
+  display: inline-block;
+  background: rgba(244, 163, 0, 0.18);
+  border: 1px solid rgba(244, 163, 0, 0.45);
+  color: #ffd98f;
+  border-radius: 999px;
+  padding: 3px 9px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
 }
 
 .stats {
@@ -200,7 +220,7 @@ input:focus,
 select:focus {
   outline: none;
   border-color: var(--accent);
-  box-shadow: 0 0 0 3px rgba(13, 127, 120, 0.18);
+  box-shadow: 0 0 0 3px rgba(15, 59, 102, 0.18);
 }
 
 .row {
@@ -228,8 +248,10 @@ select:focus {
 .btn.ghost {
   width: auto;
   padding: 8px 12px;
-  background: linear-gradient(180deg, #f3f9f8, #e5f3f1);
-  border-color: #cfe6e1;
+  background: var(--gold);
+  color: #13263a;
+  border-color: #d79000;
+  font-weight: 700;
 }
 
 .filters {
@@ -262,15 +284,15 @@ td {
 }
 
 th {
-  background: #f7faf9;
-  color: #3a4a4d;
+  background: #f1f6fd;
+  color: #29415b;
   position: sticky;
   top: 0;
   z-index: 1;
 }
 
 tbody tr:hover {
-  background: #f5fbfa;
+  background: #f3f8ff;
 }
 
 .delete-btn {
