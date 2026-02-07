@@ -12,6 +12,7 @@ const INCOME_CATEGORIES = [
 ];
 
 const state = load();
+let editingEntryId = null;
 
 const el = {
   typeInput: document.getElementById("typeInput"),
@@ -22,6 +23,9 @@ const el = {
   clearBtn: document.getElementById("clearBtn"),
   budgetInput: document.getElementById("budgetInput"),
   saveBudgetBtn: document.getElementById("saveBudgetBtn"),
+  exportDataBtn: document.getElementById("exportDataBtn"),
+  importDataBtn: document.getElementById("importDataBtn"),
+  importFileInput: document.getElementById("importFileInput"),
   filterType: document.getElementById("filterType"),
   filterCategory: document.getElementById("filterCategory"),
   searchInput: document.getElementById("searchInput"),
@@ -36,6 +40,13 @@ const el = {
   status: document.getElementById("status"),
   helpBtn: document.getElementById("helpBtn"),
   helpDialog: document.getElementById("helpDialog"),
+  editDialog: document.getElementById("editDialog"),
+  editTypeInput: document.getElementById("editTypeInput"),
+  editCategoryInput: document.getElementById("editCategoryInput"),
+  editAmountInput: document.getElementById("editAmountInput"),
+  editNoteInput: document.getElementById("editNoteInput"),
+  saveEditBtn: document.getElementById("saveEditBtn"),
+  cancelEditBtn: document.getElementById("cancelEditBtn"),
   monthChart: document.getElementById("monthChart"),
   categoryChart: document.getElementById("categoryChart")
 };
@@ -48,6 +59,9 @@ function wire() {
   el.saveBtn.addEventListener("click", addEntry);
   el.clearBtn.addEventListener("click", clearForm);
   el.saveBudgetBtn.addEventListener("click", saveBudget);
+  el.exportDataBtn.addEventListener("click", exportBackup);
+  el.importDataBtn.addEventListener("click", () => el.importFileInput.click());
+  el.importFileInput.addEventListener("change", importBackupFromFile);
 
   [el.filterType, el.filterCategory, el.searchInput].forEach((node) => {
     node.addEventListener("input", renderTable);
@@ -62,6 +76,9 @@ function wire() {
   });
 
   el.helpBtn.addEventListener("click", () => el.helpDialog.showModal());
+  el.editTypeInput.addEventListener("change", refreshEditCategoryInput);
+  el.saveEditBtn.addEventListener("click", saveEditedEntry);
+  el.cancelEditBtn.addEventListener("click", closeEditDialog);
   window.addEventListener("resize", drawCharts);
 }
 
@@ -218,10 +235,18 @@ function renderTable() {
     appendCell(tr, entry.note || "");
 
     const actionCell = document.createElement("td");
+    const editBtn = document.createElement("button");
+    editBtn.className = "btn";
+    editBtn.textContent = "Edit";
+    editBtn.style.width = "auto";
+    editBtn.style.marginRight = "6px";
+    editBtn.addEventListener("click", () => openEditDialog(entry.id));
+
     const deleteBtn = document.createElement("button");
     deleteBtn.className = "delete-btn";
     deleteBtn.textContent = "Delete";
     deleteBtn.addEventListener("click", () => deleteEntry(entry.id));
+    actionCell.appendChild(editBtn);
     actionCell.appendChild(deleteBtn);
     tr.appendChild(actionCell);
 
@@ -237,6 +262,145 @@ function deleteEntry(id) {
   save();
   render();
   setStatus("Entry deleted.");
+}
+
+function exportBackup() {
+  const snapshot = {
+    exportedAt: new Date().toISOString(),
+    app: "BudgetBeacon",
+    version: 1,
+    budget: state.budget,
+    entries: state.entries
+  };
+
+  const blob = new Blob([JSON.stringify(snapshot, null, 2)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  const stamp = new Date().toISOString().slice(0, 10);
+  a.href = url;
+  a.download = `budgetbeacon_backup_${stamp}.json`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+  setStatus("Backup exported.");
+}
+
+function importBackupFromFile(event) {
+  const file = event.target.files && event.target.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = () => {
+    try {
+      const parsed = JSON.parse(String(reader.result || "{}"));
+      const importedEntries = Array.isArray(parsed.entries) ? parsed.entries : [];
+      const importedBudget = Number(parsed.budget || 0);
+
+      if (!confirm("Import this backup? This will replace your current web data.")) {
+        el.importFileInput.value = "";
+        return;
+      }
+
+      state.entries = importedEntries
+        .map((entry) => sanitizeEntry(entry))
+        .filter((entry) => entry !== null);
+      state.budget = Number.isFinite(importedBudget) && importedBudget >= 0 ? importedBudget : 0;
+
+      save();
+      render();
+      setStatus("Backup imported.");
+    } catch {
+      setStatus("Could not import backup file.");
+    } finally {
+      el.importFileInput.value = "";
+    }
+  };
+  reader.readAsText(file);
+}
+
+function sanitizeEntry(entry) {
+  if (!entry || typeof entry !== "object") return null;
+  const type = entry.type === "income" ? "income" : "expense";
+  const category = String(entry.category || "").trim();
+  const amount = Number(entry.amount);
+  const note = String(entry.note || "");
+  const createdAt = String(entry.createdAt || new Date().toISOString());
+  const id = String(entry.id || crypto.randomUUID());
+
+  if (!category || !Number.isFinite(amount) || amount < 0) return null;
+
+  return {
+    id,
+    type,
+    category,
+    amount,
+    note,
+    createdAt
+  };
+}
+
+function openEditDialog(id) {
+  const entry = state.entries.find((item) => item.id === id);
+  if (!entry) return;
+  editingEntryId = id;
+
+  el.editTypeInput.value = entry.type;
+  refreshEditCategoryInput(entry.category);
+  el.editAmountInput.value = String(entry.amount);
+  el.editNoteInput.value = entry.note || "";
+  el.editDialog.showModal();
+}
+
+function refreshEditCategoryInput(selected = "") {
+  const type = el.editTypeInput.value;
+  const dynamic = Array.from(new Set(state.entries.filter((e) => e.type === type).map((e) => e.category))).sort();
+  const choices = Array.from(new Set([...categoriesFor(type), ...dynamic]));
+
+  el.editCategoryInput.innerHTML = "";
+  choices.forEach((name) => {
+    const opt = document.createElement("option");
+    opt.value = name;
+    opt.textContent = name;
+    el.editCategoryInput.appendChild(opt);
+  });
+
+  if (selected && choices.includes(selected)) {
+    el.editCategoryInput.value = selected;
+  }
+}
+
+function saveEditedEntry(event) {
+  event.preventDefault();
+  if (!editingEntryId) return;
+
+  const entry = state.entries.find((item) => item.id === editingEntryId);
+  if (!entry) return;
+
+  const type = el.editTypeInput.value;
+  const category = (el.editCategoryInput.value || "").trim();
+  const amount = Number(el.editAmountInput.value);
+  const note = (el.editNoteInput.value || "").trim();
+
+  if (!category) return setStatus("Edit failed: pick a category.");
+  if (!Number.isFinite(amount) || amount < 0) return setStatus("Edit failed: enter a valid amount.");
+
+  entry.type = type;
+  entry.category = category;
+  entry.amount = amount;
+  entry.note = note;
+
+  save();
+  render();
+  closeEditDialog();
+  setStatus("Entry updated.");
+}
+
+function closeEditDialog() {
+  editingEntryId = null;
+  if (el.editDialog.open) {
+    el.editDialog.close();
+  }
 }
 
 function drawCharts() {
