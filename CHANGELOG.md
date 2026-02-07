@@ -3,9 +3,13 @@
 All notable changes to BudgetBeacon are documented here.
 
 ## [Unreleased]
+### Added
+- Cloud sync exploration document with architecture options and rollout plan (`docs/cloud-sync-exploration.md`)
+- Feature-flagged web persistence adapter with default local mode and `cloud-stub` mode (`webapp/app.js`)
+- Web `Sync Now (Cloud)` action wired to the persistence adapter (`webapp/index.html`, `webapp/app.js`)
+
 ### Planned
-- Deployment guide for Vercel/Netlify/GitHub Pages
-- Cloud sync exploration
+- Optional deployment guides for Vercel and Netlify (GitHub Pages is already live)
 
 ## [2026-02-06] - v0.7.0
 ### Added

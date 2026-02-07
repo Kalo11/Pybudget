@@ -31,7 +31,7 @@ This repo includes `.github/workflows/deploy-pages.yml` to publish `webapp/`.
 3. Under `Build and deployment`, choose `Source: GitHub Actions`.
 4. Wait for the `Deploy BudgetBeacon Web` workflow to complete.
 
-Expected live URL:
+Live URL:
 `https://kalo11.github.io/BudgetBeacon/`
 
 ### Desktop App
@@ -61,6 +61,11 @@ python budget_app.py
 - No user accounts/cloud sync yet.
 - Desktop and web data stores are separate.
 - Desktop UI is designed for desktop OS windows (not mobile-native).
+
+## Cloud Sync Exploration
+See: `docs/cloud-sync-exploration.md`
+Web prototype flag: append `?cloudSync=1` to the web app URL.
+When enabled, use `Sync Now (Cloud)` in the web app to trigger a manual sync check.
 
 ## Quality Checks
 Use: `webapp/QA_CHECKLIST.md`

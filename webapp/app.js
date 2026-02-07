@@ -1,6 +1,10 @@
 ﻿const STORAGE_KEY = "budgetbeacon_web_v1";
 const LEGACY_STORAGE_KEYS = ["pybudget_web_v1"];
 const ONBOARDING_KEY = "budgetbeacon_onboarding_seen_v1";
+const CLOUD_SYNC_FLAG_QUERY_PARAM = "cloudSync";
+const CLOUD_SYNC_FLAG_KEY = "budgetbeacon_cloud_sync_enabled_v1";
+const CLOUD_SYNC_STUB_KEY = "budgetbeacon_cloud_sync_stub_v1";
+const CLOUD_SYNC_META_KEY = "budgetbeacon_cloud_sync_meta_v1";
 
 const EXPENSE_CATEGORIES = [
   "Groceries", "Rent", "Utilities", "Transportation", "Dining", "Entertainment",
@@ -27,6 +31,7 @@ const onboardingSteps = [
   }
 ];
 
+const storageAdapter = createStorageAdapter();
 const state = load();
 let editingEntryId = null;
 let onboardingStep = 0;
@@ -46,6 +51,7 @@ const el = {
   saveBudgetBtn: document.getElementById("saveBudgetBtn"),
   exportDataBtn: document.getElementById("exportDataBtn"),
   importDataBtn: document.getElementById("importDataBtn"),
+  syncNowBtn: document.getElementById("syncNowBtn"),
   sampleDataBtn: document.getElementById("sampleDataBtn"),
   importFileInput: document.getElementById("importFileInput"),
   filterType: document.getElementById("filterType"),
@@ -85,6 +91,8 @@ render();
 maybeStartOnboarding();
 if (addedRecurringEntries > 0) {
   setStatus(`Added ${addedRecurringEntries} recurring entr${addedRecurringEntries === 1 ? "y" : "ies"}.`);
+} else if (storageAdapter.mode !== "local") {
+  setStatus("Cloud sync adapter enabled (stub mode).");
 }
 
 function wire() {
@@ -94,6 +102,7 @@ function wire() {
   el.saveBudgetBtn.addEventListener("click", saveBudget);
   el.exportDataBtn.addEventListener("click", exportBackup);
   el.importDataBtn.addEventListener("click", () => el.importFileInput.click());
+  el.syncNowBtn.addEventListener("click", syncNow);
   el.sampleDataBtn.addEventListener("click", toggleSampleData);
   el.importFileInput.addEventListener("change", importBackupFromFile);
 
@@ -124,7 +133,7 @@ function wire() {
 }
 
 function load() {
-  const raw = localStorage.getItem(STORAGE_KEY) || readLegacyData();
+  const raw = storageAdapter.readStateRaw();
   if (!raw) return { budget: 0, entries: [], recurringRules: [] };
   try {
     const parsed = JSON.parse(raw);
@@ -155,7 +164,94 @@ function readLegacyData() {
 }
 
 function save() {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  storageAdapter.saveState(state);
+}
+
+function createStorageAdapter() {
+  if (isCloudSyncFlagEnabled()) {
+    return createCloudStubAdapter();
+  }
+  return createLocalStorageAdapter();
+}
+
+function isCloudSyncFlagEnabled() {
+  const params = new URLSearchParams(window.location.search);
+  const queryValue = String(params.get(CLOUD_SYNC_FLAG_QUERY_PARAM) || "").toLowerCase();
+
+  if (queryValue === "1" || queryValue === "true") return true;
+  if (queryValue === "0" || queryValue === "false") return false;
+
+  return localStorage.getItem(CLOUD_SYNC_FLAG_KEY) === "1";
+}
+
+function createLocalStorageAdapter() {
+  return {
+    mode: "local",
+    readStateRaw() {
+      return localStorage.getItem(STORAGE_KEY) || readLegacyData();
+    },
+    saveState(nextState) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(nextState));
+    },
+    getOnboardingSeen() {
+      return localStorage.getItem(ONBOARDING_KEY) === "1";
+    },
+    setOnboardingSeen() {
+      localStorage.setItem(ONBOARDING_KEY, "1");
+    },
+    syncNow() {
+      return { ok: false, mode: "local", message: "Cloud sync is off. Enable with ?cloudSync=1." };
+    }
+  };
+}
+
+function createCloudStubAdapter() {
+  function writeCloudSnapshot(nextState) {
+    const syncedAt = new Date().toISOString();
+    localStorage.setItem(CLOUD_SYNC_STUB_KEY, JSON.stringify({
+      provider: "stub",
+      syncedAt,
+      payload: nextState
+    }));
+    localStorage.setItem(CLOUD_SYNC_META_KEY, JSON.stringify({
+      mode: "cloud-stub",
+      lastSyncedAt: syncedAt
+    }));
+    return syncedAt;
+  }
+
+  return {
+    mode: "cloud-stub",
+    readStateRaw() {
+      const cloudRaw = localStorage.getItem(CLOUD_SYNC_STUB_KEY);
+      if (cloudRaw) {
+        try {
+          const cloudDoc = JSON.parse(cloudRaw);
+          if (cloudDoc && typeof cloudDoc === "object" && cloudDoc.payload && typeof cloudDoc.payload === "object") {
+            return JSON.stringify(cloudDoc.payload);
+          }
+        } catch {
+          // If cloud payload is malformed, fall back to local storage.
+        }
+      }
+      return localStorage.getItem(STORAGE_KEY) || readLegacyData();
+    },
+    saveState(nextState) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(nextState));
+      writeCloudSnapshot(nextState);
+    },
+    getOnboardingSeen() {
+      return localStorage.getItem(ONBOARDING_KEY) === "1";
+    },
+    setOnboardingSeen() {
+      localStorage.setItem(ONBOARDING_KEY, "1");
+    },
+    syncNow(nextState) {
+      const syncedAt = writeCloudSnapshot(nextState);
+      const syncedLabel = new Date(syncedAt).toLocaleString();
+      return { ok: true, mode: "cloud-stub", lastSyncedAt: syncedAt, message: `Cloud sync complete (${syncedLabel}).` };
+    }
+  };
 }
 
 function formatMoney(n) {
@@ -258,6 +354,15 @@ function saveBudget() {
   save();
   renderSummary();
   setStatus("Budget goal saved.");
+}
+
+function syncNow() {
+  const result = storageAdapter.syncNow(state);
+  if (!result || result.ok !== true) {
+    setStatus((result && result.message) || "Cloud sync is unavailable.");
+    return;
+  }
+  setStatus(result.message || "Cloud sync complete.");
 }
 
 function toggleSampleData() {
@@ -884,7 +989,7 @@ function closeDialog(dialog) {
 }
 
 function maybeStartOnboarding() {
-  const seen = localStorage.getItem(ONBOARDING_KEY) === "1";
+  const seen = storageAdapter.getOnboardingSeen();
   if (seen) return;
   onboardingStep = 0;
   renderOnboardingStep();
@@ -915,6 +1020,6 @@ function goOnboardingNext() {
 }
 
 function completeOnboarding() {
-  localStorage.setItem(ONBOARDING_KEY, "1");
+  storageAdapter.setOnboardingSeen();
   closeDialog(el.onboardingDialog);
 }
