@@ -52,6 +52,15 @@ INCOME_CATEGORIES = [
     "Other Income",
 ]
 DEFAULT_CATEGORIES = sorted(set(EXPENSE_CATEGORIES + INCOME_CATEGORIES))
+LEGACY_EXPENSE_CATEGORY_RENAMES = {
+    "rent": "Mortgage/Rent",
+    "utilities": "Electric",
+    "insurance": "Car Insurance",
+    "debt payment": "Loans",
+    "phone/internet": "Internet",
+}
+CANONICAL_EXPENSE_CATEGORIES = {name.lower(): name for name in EXPENSE_CATEGORIES}
+CANONICAL_INCOME_CATEGORIES = {name.lower(): name for name in INCOME_CATEGORIES}
 
 
 def typical_categories_for(entry_type: str) -> list[str]:
@@ -60,6 +69,19 @@ def typical_categories_for(entry_type: str) -> list[str]:
     if entry_type == "expense":
         return EXPENSE_CATEGORIES[:]
     return DEFAULT_CATEGORIES[:]
+
+
+def normalize_category_name(entry_type: str, raw_category: object) -> str:
+    category = str(raw_category or "").strip()
+    if not category:
+        return ""
+
+    if entry_type == "expense":
+        mapped = LEGACY_EXPENSE_CATEGORY_RENAMES.get(category.lower(), category)
+        return CANONICAL_EXPENSE_CATEGORIES.get(mapped.lower(), mapped)
+    if entry_type == "income":
+        return CANONICAL_INCOME_CATEGORIES.get(category.lower(), category)
+    return category
 
 
 class Colors:
@@ -171,7 +193,7 @@ def _sanitize_transaction(tx: object, fallback_id: int) -> Optional[dict]:
     if tx_type not in {"income", "expense"}:
         return None
 
-    category = str(tx.get("category", "")).strip()
+    category = normalize_category_name(tx_type, tx.get("category", ""))
     if not category:
         return None
 
@@ -657,7 +679,7 @@ class BudgetAppGUI:
 
     def add_transaction(self) -> None:
         kind = self.type_var.get().strip().lower()
-        category = self.category_var.get().strip()
+        category = normalize_category_name(kind, self.category_var.get())
         amount_raw = self.amount_var.get().strip().replace("$", "")
         note = self.note_var.get().strip()
 
@@ -800,7 +822,7 @@ class BudgetAppGUI:
                 reader = csv.DictReader(file)
                 for row in reader:
                     tx_type = (row.get("type") or "").strip().lower()
-                    category = (row.get("category") or "").strip()
+                    category = normalize_category_name(tx_type, row.get("category"))
                     note = (row.get("note") or "").strip()
                     created_at = (row.get("created_at") or "").strip() or datetime.now().isoformat(timespec="seconds")
 
