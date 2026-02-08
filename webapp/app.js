@@ -7,8 +7,8 @@ const CLOUD_SYNC_STUB_KEY = "budgetbeacon_cloud_sync_stub_v1";
 const CLOUD_SYNC_META_KEY = "budgetbeacon_cloud_sync_meta_v1";
 
 const EXPENSE_CATEGORIES = [
-  "Groceries", "Rent", "Utilities", "Transportation", "Dining", "Entertainment",
-  "Healthcare", "Insurance", "Debt Payment", "Childcare", "Education", "Phone/Internet",
+  "Groceries", "Mortgage/Rent", "Water", "Gas", "Electric", "Transportation", "Dining", "Entertainment",
+  "Healthcare", "Car Insurance", "Credit Cards", "Loans", "Student Loans", "Childcare", "Education", "Internet", "Cellphone",
   "Shopping", "Personal Care", "Travel", "Gifts", "Taxes", "Other"
 ];
 
@@ -34,6 +34,13 @@ const DEFAULT_SETTINGS = {
 const SORT_OPTIONS = new Set(["date_desc", "date_asc", "amount_desc", "amount_asc"]);
 const RECURRING_FREQUENCIES = new Set(["weekly", "bi-weekly", "semi-monthly", "monthly"]);
 const DEFAULT_RECURRING_FREQUENCY = "monthly";
+const LEGACY_EXPENSE_CATEGORY_RENAMES = new Map([
+  ["rent", "Mortgage/Rent"],
+  ["utilities", "Electric"],
+  ["insurance", "Car Insurance"],
+  ["debt payment", "Loans"],
+  ["phone/internet", "Internet"]
+]);
 
 const onboardingSteps = [
   {
@@ -288,11 +295,57 @@ function sanitizeCategoryCatalog(rawCatalog, entries, recurringRules) {
   );
 
   const catalog = { expense, income };
+  migrateExpenseCategoryCatalog(catalog, entries, recurringRules);
   entries.forEach((entry) => ensureCategoryExists(catalog, entry.type, entry.category));
   recurringRules.forEach((rule) => ensureCategoryExists(catalog, rule.type, rule.category));
   ensureCategoryExists(catalog, "expense", "Other");
   ensureCategoryExists(catalog, "income", "Other Income");
   return catalog;
+}
+
+function migrateExpenseCategoryCatalog(catalog, entries, recurringRules) {
+  if (!catalog || !Array.isArray(catalog.expense)) return;
+
+  LEGACY_EXPENSE_CATEGORY_RENAMES.forEach((nextName, legacyKey) => {
+    renameExpenseCategoryReferences(entries, recurringRules, legacyKey, nextName);
+
+    const legacyCategory = catalog.expense.find(
+      (item) => String(item && item.name || "").trim().toLowerCase() === legacyKey
+    );
+    if (!legacyCategory) return;
+
+    const existingNext = catalog.expense.find(
+      (item) => item !== legacyCategory && String(item && item.name || "").trim().toLowerCase() === nextName.toLowerCase()
+    );
+    if (existingNext) {
+      const legacyIndex = catalog.expense.indexOf(legacyCategory);
+      if (legacyIndex >= 0) {
+        catalog.expense.splice(legacyIndex, 1);
+      }
+      return;
+    }
+
+    legacyCategory.name = nextName;
+  });
+
+  EXPENSE_CATEGORIES.forEach((name) => ensureCategoryExists(catalog, "expense", name));
+  catalog.expense.sort((a, b) => a.name.localeCompare(b.name));
+}
+
+function renameExpenseCategoryReferences(entries, recurringRules, legacyKey, nextName) {
+  entries.forEach((entry) => {
+    if (entry.type !== "expense") return;
+    if (String(entry.category || "").trim().toLowerCase() === legacyKey) {
+      entry.category = nextName;
+    }
+  });
+
+  recurringRules.forEach((rule) => {
+    if (rule.type !== "expense") return;
+    if (String(rule.category || "").trim().toLowerCase() === legacyKey) {
+      rule.category = nextName;
+    }
+  });
 }
 
 function normalizeCategoryList(rawList, fallback) {
@@ -996,12 +1049,12 @@ function toggleSampleData() {
   const daysAgo = (days) => new Date(now.getTime() - days * 86400000).toISOString();
   const sampleEntries = [
     { id: makeId(), type: "income", category: "Salary", amount: 4200, note: "Monthly paycheck", createdAt: daysAgo(25), meta: { sample: true } },
-    { id: makeId(), type: "expense", category: "Rent", amount: 1450, note: "Apartment", createdAt: daysAgo(24), meta: { sample: true } },
+    { id: makeId(), type: "expense", category: "Mortgage/Rent", amount: 1450, note: "Apartment", createdAt: daysAgo(24), meta: { sample: true } },
     { id: makeId(), type: "expense", category: "Groceries", amount: 120, note: "Weekly groceries", createdAt: daysAgo(20), meta: { sample: true } },
     { id: makeId(), type: "expense", category: "Transportation", amount: 65, note: "Fuel", createdAt: daysAgo(14), meta: { sample: true } },
     { id: makeId(), type: "expense", category: "Dining", amount: 54, note: "Family dinner", createdAt: daysAgo(10), meta: { sample: true } },
     { id: makeId(), type: "income", category: "Freelance", amount: 380, note: "Side project", createdAt: daysAgo(8), meta: { sample: true } },
-    { id: makeId(), type: "expense", category: "Utilities", amount: 160, note: "Electric and water", createdAt: daysAgo(5), meta: { sample: true } }
+    { id: makeId(), type: "expense", category: "Electric", amount: 160, note: "Power bill", createdAt: daysAgo(5), meta: { sample: true } }
   ];
 
   sampleEntries.forEach((entry) => ensureCategoryExists(state.categoryCatalog, entry.type, entry.category));
