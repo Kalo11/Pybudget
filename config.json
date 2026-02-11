@@ -1,0 +1,111 @@
+{
+  "appName": "BudgetBeacon",
+  "appTagline": "Guiding your budget with clarity",
+  "appDescription": "Track every dollar, spot spending patterns, and stay ahead of your monthly budget.",
+  "dataFormat": {
+    "version": 1,
+    "storageKey": "budgetbeacon_web_v1",
+    "legacyStorageKeys": ["pybudget_web_v1"],
+    "onboardingKey": "budgetbeacon_onboarding_seen_v1"
+  },
+  "security": {
+    "sessionCookieName": "budgetbeacon_session",
+    "sessionTtlDays": 7,
+    "passwordPbkdf2Rounds": 210000
+  },
+  "categories": {
+    "expense": [
+      "Groceries",
+      "Mortgage/Rent",
+      "Water",
+      "Gas",
+      "Electric",
+      "Transportation",
+      "Dining",
+      "Entertainment",
+      "Healthcare",
+      "Car Insurance",
+      "Credit Cards",
+      "Loans",
+      "Student Loans",
+      "Childcare",
+      "Education",
+      "Internet",
+      "Cellphone",
+      "Shopping",
+      "Personal Care",
+      "Travel",
+      "Gifts",
+      "Taxes",
+      "Other"
+    ],
+    "income": [
+      "Salary",
+      "Freelance",
+      "Business",
+      "Interest",
+      "Dividends",
+      "Rental Income",
+      "Refund",
+      "Gift Received",
+      "Other Income"
+    ]
+  },
+  "colors": {
+    "expenseCategoryColors": [
+      "#246aaf",
+      "#ad4e3b",
+      "#2e8f6b",
+      "#7557a8",
+      "#b07723",
+      "#1f7e91",
+      "#5b5d90",
+      "#97754e"
+    ],
+    "incomeCategoryColors": [
+      "#2a8f6d",
+      "#4f7fc2",
+      "#7b64bf",
+      "#3f9c96",
+      "#a67d2a",
+      "#6a8d3b"
+    ],
+    "themeColors": {
+      "background": "#eef4fb",
+      "panel": "#ffffff",
+      "accent": "#0f3b66",
+      "accentSoft": "#e5eef9",
+      "beacon": "#f4a300",
+      "text": "#13263a",
+      "textMuted": "#5a6f86",
+      "income": "#1f8f55",
+      "expense": "#c63f30",
+      "grid": "#c8d7e8"
+    }
+  },
+  "legacyCategoryRenames": {
+    "rent": "Mortgage/Rent",
+    "utilities": "Electric",
+    "insurance": "Car Insurance",
+    "debt payment": "Loans",
+    "phone/internet": "Internet"
+  },
+  "sortOptions": [
+    "date_desc",
+    "date_asc",
+    "amount_desc",
+    "amount_asc"
+  ],
+  "recurringFrequencies": [
+    "weekly",
+    "bi-weekly",
+    "semi-monthly",
+    "monthly"
+  ],
+  "defaultSettings": {
+    "defaultType": "expense",
+    "dataScope": "month",
+    "monthStartDay": 1,
+    "sortOrder": "date_desc"
+  }
+}

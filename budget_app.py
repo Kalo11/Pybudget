@@ -200,7 +200,8 @@ def _sanitize_transaction(tx: object, fallback_id: int) -> Optional[dict]:
     amount = _amount_or_zero(tx.get("amount"))
     note = str(tx.get("note", "")).strip()
 
-    created_raw = tx.get("created_at")
+    # Support both createdAt (web) and created_at (legacy) for backwards compatibility
+    created_raw = tx.get("createdAt") or tx.get("created_at")
     created_at = str(created_raw).strip() if created_raw is not None else ""
     if not created_at:
         created_at = datetime.now().isoformat(timespec="seconds")
@@ -215,7 +216,7 @@ def _sanitize_transaction(tx: object, fallback_id: int) -> Optional[dict]:
         "category": category,
         "amount": amount,
         "note": note,
-        "created_at": created_at,
+        "createdAt": created_at,
     }
 
 
@@ -607,7 +608,7 @@ class BudgetAppGUI:
                 return _safe_int(tx.get("id"), 0)
             if key == "amount":
                 return _amount_or_zero(tx.get("amount"))
-            lookup = "created_at" if key == "date" else key
+            lookup = "createdAt" if key == "date" else key
             return str(tx.get(lookup, "")).lower()
 
         return sorted(rows, key=key_fn, reverse=self.sort_reverse)
@@ -633,7 +634,7 @@ class BudgetAppGUI:
                 "end",
                 values=(
                     tx.get("id", ""),
-                    tx.get("created_at", ""),
+                    tx.get("createdAt", ""),
                     tx.get("type", ""),
                     tx.get("category", ""),
                     format_currency(_amount_or_zero(tx.get("amount"))),
@@ -703,7 +704,7 @@ class BudgetAppGUI:
             "category": category,
             "amount": amount,
             "note": note,
-            "created_at": datetime.now().isoformat(timespec="seconds"),
+            "createdAt": datetime.now().isoformat(timespec="seconds"),
         }
         self.data["transactions"].append(tx)
         save_data(self.data)
@@ -791,7 +792,7 @@ class BudgetAppGUI:
 
         try:
             with open(path, "w", newline="", encoding="utf-8") as file:
-                writer = csv.DictWriter(file, fieldnames=["id", "type", "category", "amount", "note", "created_at"])
+                writer = csv.DictWriter(file, fieldnames=["id", "type", "category", "amount", "note", "createdAt"])
                 writer.writeheader()
                 for tx in self.data["transactions"]:
                     writer.writerow(tx)
@@ -869,7 +870,7 @@ class BudgetAppGUI:
         expense_by_month = defaultdict(float)
         for tx in self.data.get("transactions", []):
             if tx.get("type") == "expense":
-                expense_by_month[safe_month_key(tx.get("created_at", ""))] += float(tx.get("amount", 0.0))
+                expense_by_month[safe_month_key(tx.get("createdAt", ""))] += float(tx.get("amount", 0.0))
 
         months = sorted(expense_by_month.keys())[-6:]
         canvas.create_text(12, 14, text="Monthly Expense Trend", anchor="w", fill=Colors.TEXT, font=("Segoe UI", 10, "bold"))

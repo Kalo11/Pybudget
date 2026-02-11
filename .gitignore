@@ -1,13 +1,48 @@
-﻿__pycache__/
+﻿# Python
+__pycache__/
 *.py[cod]
 *.pyo
 *.pyd
 *.so
 *.egg-info/
+dist/
+build/
+.eggs/
+
+# Virtual Environments
 .venv/
 venv/
 env/
+ENV/
 .env
-*.log
-budget_data.json
+
+# IDE
 .vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.mypy_cache/
+
+# Logs
+*.log
+*.txt
+
+# Application Data
+budget_data.json
+.budgetbeacon_api/
+*.db
+*.sqlite3
+
+# OS
+Thumbs.db
+
+# Git
+.git/
